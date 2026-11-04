@@ -1,0 +1,19 @@
+# Build
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Local data and secrets (never commit financial data)
+data/
+*.xlsx
+*.xls
+*.csv
+*.mv.db
+*.trace.db
+.env
+*service-account*.json
