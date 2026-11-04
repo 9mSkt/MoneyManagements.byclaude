@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title th:text="#{login.title} + ' · ' + #{app.name}">Sign in</title>
+    <meta name="theme-color" content="#F6F5F1">
+    <link rel="manifest" th:href="@{/manifest.webmanifest}">
+    <link rel="icon" type="image/svg+xml" th:href="@{/icons/app-icon.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+<body>
+<main class="login-page">
+    <div class="card login-card">
+        <div class="login-tools">
+            <nav class="lang-switch" th:aria-label="#{top.language}">
+                <a th:href="@{/login(lang='en')}" th:classappend="${#locale.language != 'th'} ? 'on'" hreflang="en">EN</a>
+                <a th:href="@{/login(lang='th')}" th:classappend="${#locale.language == 'th'} ? 'on'" hreflang="th">TH</a>
+            </nav>
+            <button type="button" class="icon-btn" data-theme-toggle th:title="#{top.theme}" th:aria-label="#{top.theme}">
+                <svg class="icon theme-light-icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#moon}"/></svg>
+                <svg class="icon theme-dark-icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#sun}"/></svg>
+            </button>
+        </div>
+        <div class="brand"><span class="brand-mark">฿</span><span th:text="#{app.name}">Money Management</span></div>
+        <p class="muted" th:text="#{login.subtitle}" style="margin:0 0 20px">Your personal money manager</p>
+
+        <div class="alert error" th:if="${param.error}" th:text="#{login.error}" role="alert">Wrong password</div>
+        <div class="alert error" th:if="${param.locked}" th:text="#{login.locked}" role="alert">Locked</div>
+        <div class="alert info" th:if="${param.logout}" th:text="#{login.logout}">Signed out</div>
+        <div class="alert info" th:if="${param.timeout}" th:text="#{login.timeout}">Timed out</div>
+
+        <form th:action="@{/login}" method="post">
+            <div class="field">
+                <label for="username" th:text="#{login.username}">Username</label>
+                <input class="input" id="username" name="username" autocomplete="username" autocapitalize="none" required autofocus>
+            </div>
+            <div class="field">
+                <label for="password" th:text="#{login.password}">Password</label>
+                <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn" style="width:100%" th:text="#{login.submit}">Sign in</button>
+        </form>
+    </div>
+</main>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

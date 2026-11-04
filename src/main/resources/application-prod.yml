@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    # Neon PostgreSQL, e.g. jdbc:postgresql://<host>/<db>?sslmode=require
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+
+server:
+  port: ${PORT:8080}
+  # Render terminates HTTPS and forwards X-Forwarded-* headers.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: true

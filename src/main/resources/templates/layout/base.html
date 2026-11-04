@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout(title, content, scripts)" th:lang="${#locale.language}" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title th:text="${title} + ' · ' + #{app.name}">Money Management</title>
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <meta name="session-timeout" th:content="${sessionTimeoutSeconds}">
+    <meta name="theme-color" content="#F6F5F1">
+    <link rel="manifest" th:href="@{/manifest.webmanifest}">
+    <link rel="icon" type="image/svg+xml" th:href="@{/icons/app-icon.svg}">
+    <link rel="apple-touch-icon" th:href="@{/icons/app-icon.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar" th:aria-label="#{app.name}">
+        <a class="brand" th:href="@{/}"><span class="brand-mark">฿</span><span th:text="#{app.name}">Money</span></a>
+        <a th:each="n : ${nav}" class="nav-link" th:classappend="${n.isActive(currentPath)} ? 'active'"
+           th:href="@{${n.path}}" th:attr="aria-current=${n.isActive(currentPath)} ? 'page' : null">
+            <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg} + '#' + ${n.key}"/></svg>
+            <span th:text="#{${'nav.' + n.key}}">Page</span>
+            <span class="soon" th:if="${n.phase > 1}" th:text="'P' + ${n.phase}">P2</span>
+        </a>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <a class="brand topbar-brand" th:href="@{/}"><span class="brand-mark">฿</span><span th:text="#{app.short}">Money</span></a>
+            <h1 th:text="${title}">Title</h1>
+            <nav class="lang-switch" th:aria-label="#{top.language}">
+                <a th:href="@{${currentPath}(lang='en')}" th:classappend="${#locale.language != 'th'} ? 'on'" hreflang="en">EN</a>
+                <a th:href="@{${currentPath}(lang='th')}" th:classappend="${#locale.language == 'th'} ? 'on'" hreflang="th">TH</a>
+            </nav>
+            <button type="button" class="icon-btn" data-theme-toggle th:title="#{top.theme}" th:aria-label="#{top.theme}">
+                <svg class="icon theme-light-icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#moon}"/></svg>
+                <svg class="icon theme-dark-icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#sun}"/></svg>
+            </button>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="icon-btn" th:title="#{top.logout}" th:aria-label="#{top.logout}">
+                    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#logout}"/></svg>
+                    <span class="logout-label" th:text="#{top.logout}">Log out</span>
+                </button>
+            </form>
+        </header>
+
+        <main class="content">
+            <h1 class="page-title" th:text="${title}">Title</h1>
+            <th:block th:replace="${content}"/>
+        </main>
+    </div>
+</div>
+
+<!-- Phone: bottom tab bar, "More" sheet and floating quick-add button -->
+<nav class="tabbar" th:aria-label="#{app.name}">
+    <a th:each="n : ${nav}" th:if="${n.mobileTab}" class="tab" th:classappend="${n.isActive(currentPath)} ? 'active'"
+       th:href="@{${n.path}}">
+        <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg} + '#' + ${n.key}"/></svg>
+        <span th:text="#{${'nav.' + n.key}}">Page</span>
+    </a>
+    <button type="button" class="tab" data-open="more-sheet">
+        <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#more}"/></svg>
+        <span th:text="#{nav.more}">More</span>
+    </button>
+</nav>
+<button type="button" class="fab" data-open="quick-add" th:aria-label="#{top.quickAdd}" th:title="#{top.quickAdd}">
+    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+</button>
+
+<dialog id="more-sheet" class="sheet">
+    <div class="sheet-head">
+        <h2 th:text="#{nav.more}">More</h2>
+        <button type="button" class="icon-btn" data-close th:aria-label="#{quickAdd.close}">
+            <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#close}"/></svg>
+        </button>
+    </div>
+    <ul class="sheet-list">
+        <li th:each="n : ${nav}" th:unless="${n.mobileTab}">
+            <a class="nav-link" th:classappend="${n.isActive(currentPath)} ? 'active'" th:href="@{${n.path}}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg} + '#' + ${n.key}"/></svg>
+                <span th:text="#{${'nav.' + n.key}}">Page</span>
+                <span class="soon" th:if="${n.phase > 1}" th:text="'P' + ${n.phase}">P2</span>
+            </a>
+        </li>
+    </ul>
+</dialog>
+
+<dialog id="quick-add" class="sheet">
+    <div class="sheet-head">
+        <h2 th:text="#{quickAdd.title}">Quick add</h2>
+        <button type="button" class="icon-btn" data-close th:aria-label="#{quickAdd.close}">
+            <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#close}"/></svg>
+        </button>
+    </div>
+    <div class="sheet-body">
+        <p class="muted" th:text="#{quickAdd.body}">Coming in Phase 2.</p>
+        <button type="button" class="btn secondary" data-close th:text="#{quickAdd.close}">Close</button>
+    </div>
+</dialog>
+
+<script th:src="@{/vendor/htmx-2.0.4.min.js}"></script>
+<script th:src="@{/js/app.js}"></script>
+<th:block th:replace="${scripts}"/>
+</body>
+</html>

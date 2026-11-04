@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{${'nav.' + item.key}}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content">
+    <div class="card" style="max-width:560px">
+        <span class="badge" th:text="#{placeholder.title}">Coming soon</span>
+        <h2 style="margin-top:12px" th:text="#{${'nav.' + item.key}}">Page</h2>
+        <p class="muted" th:text="#{placeholder.body(${item.phase})}">This page is built in Phase 2.</p>
+        <a class="btn secondary" th:href="@{/}" th:text="#{placeholder.back}">Back</a>
+    </div>
+</section>
+</body>
+</html>

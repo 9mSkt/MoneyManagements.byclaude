@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{settings.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack" style="max-width:720px">
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{settings.appearance}">Appearance</h2></div>
+        <div class="setting-row">
+            <span th:text="#{settings.theme}">Theme</span>
+            <div class="segmented">
+                <button type="button" data-set-theme="light" th:text="#{settings.theme.light}">Light</button>
+                <button type="button" data-set-theme="dark" th:text="#{settings.theme.dark}">Dark</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span th:text="#{settings.language}">Language</span>
+            <div class="segmented">
+                <a th:href="@{/settings(lang='en')}" th:classappend="${#locale.language != 'th'} ? 'on'">English</a>
+                <a th:href="@{/settings(lang='th')}" th:classappend="${#locale.language == 'th'} ? 'on'">ไทย</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{settings.data}">Data</h2></div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{settings.import}">Import</div>
+                <div class="muted" style="font-size:.85rem" th:text="#{settings.import.desc}">Upload .xlsx</div>
+            </div>
+            <a class="btn secondary" th:href="@{/settings/import}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#upload}"/></svg>
+                <span th:text="#{settings.import.open}">Open</span>
+            </a>
+        </div>
+        <p class="muted" style="font-size:.85rem;margin:8px 0 0" th:text="#{settings.later}">Later phases</p>
+    </div>
+</section>
+</body>
+</html>

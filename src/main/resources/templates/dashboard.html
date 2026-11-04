@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{dashboard.title}, ~{::content}, ~{::scripts})}">
+<body>
+<section th:fragment="content" class="stack">
+    <div class="notice">
+        <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#info}"/></svg>
+        <span><span class="badge sample" th:text="#{dashboard.sample}">Sample data</span>
+            <span th:text="#{dashboard.sampleNote}">Mockup</span></span>
+    </div>
+
+    <div class="grid kpis">
+        <div class="card kpi" th:each="k : ${kpis}">
+            <div class="bar-accent" th:classappend="${k.kind}"></div>
+            <div class="label" th:text="#{${'kpi.' + k.key}}">Income</div>
+            <div class="value amount" th:classappend="${k.kind}"
+                 th:text="${k.percent} ? ${#numbers.formatDecimal(k.value, 1, 'COMMA', 1, 'POINT')} + '%'
+                                        : '฿' + ${#numbers.formatDecimal(k.value, 1, 'COMMA', 2, 'POINT')}">฿0.00</div>
+        </div>
+    </div>
+
+    <div class="grid two">
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{dashboard.trend}">Trend</h2></div>
+            <div id="chart-trend" class="chart" th:data-src="@{/api/dashboard/sample}"></div>
+        </div>
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{dashboard.byGroup}">By group</h2></div>
+            <div id="chart-groups" class="chart"></div>
+        </div>
+    </div>
+
+    <div class="grid two">
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{dashboard.budget}">Budget</h2></div>
+            <div class="budget-row" th:each="b : ${budgetBars}">
+                <div class="budget-meta">
+                    <span th:text="#{${'group.' + b.group}}">Eat</span>
+                    <span class="amount">
+                        <span th:text="'฿' + ${#numbers.formatDecimal(b.spent, 1, 'COMMA', 2, 'POINT')}">฿0</span>
+                        <span class="muted" th:text="#{dashboard.of}">of</span>
+                        <span class="muted" th:text="'฿' + ${#numbers.formatDecimal(b.budget, 1, 'COMMA', 2, 'POINT')}">฿0</span>
+                        · <span class="pct" th:classappend="${b.level()}"
+                                th:text="${#numbers.formatDecimal(b.percent, 1, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+                    </span>
+                </div>
+                <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                     th:aria-valuenow="${b.percent}" th:aria-label="#{${'group.' + b.group}}">
+                    <div class="fill" th:classappend="${b.level()}" th:style="'width:' + ${b.width()} + '%'"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{dashboard.upcoming}">Upcoming</h2></div>
+            <ul class="list">
+                <li th:each="u : ${upcoming}">
+                    <span class="dot" th:style="${u.labelKey == 'upcoming.installment'} ? 'background:var(--investment)' : 'background:var(--expense)'"></span>
+                    <div class="grow">
+                        <div class="title" th:text="${u.detail}">Item</div>
+                        <div class="sub">
+                            <span th:text="#{${u.labelKey}}">Installment</span> ·
+                            <span th:text="${#temporals.format(u.due, 'd MMM yyyy', #locale)}">1 Dec</span>
+                        </div>
+                    </div>
+                    <span class="amount expense" th:text="'฿' + ${#numbers.formatDecimal(u.amount, 1, 'COMMA', 2, 'POINT')}">฿0</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/echarts-5.6.0.min.js}"></script>
+    <script th:src="@{/js/charts.js}"></script>
+    <script th:src="@{/js/dashboard.js}"></script>
+</th:block>
+</body>
+</html>

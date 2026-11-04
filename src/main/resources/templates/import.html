@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{import.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack" style="max-width:720px">
+    <div class="alert error" th:if="${error}" th:text="#{${error}}" role="alert">Error</div>
+    <div class="alert info" th:if="${result}" role="status">
+        <strong th:text="#{import.done}">Import finished.</strong>
+        <span th:text="#{import.doneDetail(${result.transactions}, ${result.installments}, ${result.assets})}">counts</span>
+        <span th:if="${result.skipped > 0}" th:text="#{import.doneSkipped(${result.skipped})}">skipped</span>
+    </div>
+
+    <div class="card">
+        <p class="muted" style="margin-top:0" th:text="#{import.intro}">Download as .xlsx and upload.</p>
+        <form th:action="@{/settings/import/preview}" method="post" enctype="multipart/form-data">
+            <div class="field">
+                <label for="file" th:text="#{import.file}">File</label>
+                <input class="input" id="file" name="file" type="file" required
+                       accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            </div>
+            <p class="muted" style="font-size:.85rem" th:text="#{import.replaceNote}">Replaces previous import.</p>
+            <button type="submit" class="btn">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#upload}"/></svg>
+                <span th:text="#{import.preview}">Check file</span>
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{import.history}">Previous imports</h2></div>
+        <p class="muted" th:if="${#lists.isEmpty(batches)}" th:text="#{import.none}">No imports yet.</p>
+        <ul class="list" th:unless="${#lists.isEmpty(batches)}">
+            <li th:each="b : ${batches}">
+                <div class="grow">
+                    <div class="title" th:text="${b.sourceName}">file.xlsx</div>
+                    <div class="sub" th:text="#{import.doneDetail(${b.counts[0]}, ${b.counts[1]}, ${b.counts[2]})}">counts</div>
+                </div>
+                <span class="muted num" th:text="${#temporals.format(b.importedAt, 'd MMM yyyy HH:mm', #locale)}">date</span>
+            </li>
+        </ul>
+    </div>
+</section>
+</body>
+</html>

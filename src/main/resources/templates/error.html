@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{error.title}">Error</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+<body>
+<main class="login-page">
+    <div class="card login-card">
+        <h1 th:text="#{error.title}">Something went wrong</h1>
+        <p class="muted" th:text="#{error.body}">Please try again.</p>
+        <p class="muted num" th:text="${status}">500</p>
+        <a class="btn secondary" th:href="@{/}" th:text="#{placeholder.back}">Back</a>
+    </div>
+</main>
+</body>
+</html>

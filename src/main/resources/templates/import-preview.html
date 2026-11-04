@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{import.previewTitle}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack" style="max-width:880px">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${fileName}">money.xlsx</h2>
+        </div>
+        <table class="data">
+            <thead><tr><th th:text="#{import.col.what}">Data</th><th class="num" th:text="#{import.col.count}">Rows</th></tr></thead>
+            <tbody>
+            <tr><td th:text="#{import.row.income}">Income</td><td class="num" th:text="${plan.incomeCount()}">0</td></tr>
+            <tr><td th:text="#{import.row.expense}">Expenses</td><td class="num" th:text="${plan.expenseCount()}">0</td></tr>
+            <tr><td th:text="#{import.row.installments}">Installments</td><td class="num" th:text="${plan.installments.size()}">0</td></tr>
+            <tr><td th:text="#{import.row.recurring}">Recurring</td><td class="num" th:text="${plan.recurring.size()}">0</td></tr>
+            <tr><td th:text="#{import.row.budget}">Budget</td><td class="num" th:text="${plan.budgetRules.size()}">0</td></tr>
+            <tr><td th:text="#{import.row.assets}">Assets</td><td class="num" th:text="${plan.assets.size()}">0</td></tr>
+            <tr><td th:text="#{import.row.trades}">Trades</td><td class="num" th:text="${plan.tradeCount()}">0</td></tr>
+            <tr><td th:text="#{import.row.dividends}">Dividends</td><td class="num" th:text="${plan.dividendCount()}">0</td></tr>
+            <tr><td th:text="#{import.row.tax}">Tax years</td><td class="num" th:text="${plan.taxYears.size()}">0</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{import.byMonth}">By month</h2></div>
+        <p class="muted" style="margin-top:0;font-size:.85rem" th:text="#{import.byMonthNote}">Compare with the sheet.</p>
+        <div class="table-wrap">
+            <table class="data">
+                <thead><tr>
+                    <th th:text="#{import.col.month}">Month</th>
+                    <th class="num" th:text="#{kpi.income}">Income</th>
+                    <th class="num" th:text="#{group.FIXED}">Fixed</th>
+                    <th class="num" th:text="#{import.col.spending}">Spending</th>
+                    <th class="num" th:text="#{kpi.remaining}">Remaining</th>
+                </tr></thead>
+                <tbody>
+                <tr th:each="m : ${plan.months}">
+                    <td th:text="${#temporals.format(m.month, 'MMM yyyy', #locale)}">Jan 2026</td>
+                    <td class="num income" th:text="${#numbers.formatDecimal(m.income, 1, 'COMMA', 2, 'POINT')}">0</td>
+                    <td class="num" th:text="${#numbers.formatDecimal(m.fixedCost, 1, 'COMMA', 2, 'POINT')}">0</td>
+                    <td class="num expense" th:text="${#numbers.formatDecimal(m.spending, 1, 'COMMA', 2, 'POINT')}">0</td>
+                    <td class="num" th:text="${#numbers.formatDecimal(m.remaining(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" th:unless="${#lists.isEmpty(plan.notes)}">
+        <div class="card-head"><h2 th:text="#{import.warnings}">Notes</h2></div>
+        <ul class="list">
+            <li th:each="n : ${plan.notes}"><span th:text="${#messages.msgWithParams(n.key, n.argArray())}">note</span></li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <p class="muted" style="margin-top:0;font-size:.85rem" th:text="#{import.replaceNote}">Replaces previous import.</p>
+        <div class="actions">
+            <form th:action="@{/settings/import/confirm}" method="post">
+                <button type="submit" class="btn" th:text="#{import.confirm}">Import</button>
+            </form>
+            <form th:action="@{/settings/import/cancel}" method="post">
+                <button type="submit" class="btn secondary" th:text="#{import.cancel}">Cancel</button>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>
