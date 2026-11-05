@@ -41,7 +41,7 @@ app:
   security:
     max-failed-logins: 5
     lockout-minutes: 15
-  budget:
-    # Salary day. Income from that month's payday on (the 28th, or the last weekday before it when it falls on a
-    # weekend) counts toward the next month's budget and totals. 0 turns this off.
+  salary:
+    # Salary day (the 28th, or the last weekday before it at a weekend). Income imported from a sheet month tab
+    # is dated on that month's payday. Income always counts toward the month it is received in. 0 = the 1st.
     payday: 28

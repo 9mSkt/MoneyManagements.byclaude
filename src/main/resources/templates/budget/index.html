@@ -25,9 +25,11 @@
         </div>
         <div class="card kpi small">
             <div class="label" th:text="#{budget.base}">Income after fixed cost</div>
-            <div class="value amount primary" th:text="${@fmt.baht(s.base())}">฿0</div>
+            <div class="value amount primary" th:text="${@fmt.baht(budget.base)}">฿0</div>
+            <div class="kpi-help" th:if="${budget.estimated}" th:text="#{budget.estimatedShort}">from last month</div>
         </div>
     </div>
+    <div class="notice" th:if="${budget.estimated}"><svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#info}"/></svg><span th:text="#{budget.estimatedNote(${@fmt.baht(budget.base)})}">Estimated</span></div>
     <p class="muted small explain" th:text="#{budget.explain}">Both budgets are worked out from income after fixed cost.</p>
 
     <div class="grid two-even">

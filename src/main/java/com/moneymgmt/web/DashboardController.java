@@ -64,6 +64,8 @@ public class DashboardController {
                 new Kpi("remaining", s.remaining(), "primary", false),
                 new Kpi("savingRate", s.savingRate(), "investment", true)));
         model.addAttribute("budget", budget.actual());
+        model.addAttribute("budgetEstimated", budget.estimated());
+        model.addAttribute("budgetBase", budget.base());
         model.addAttribute("upcoming", posting.upcoming(AppTime.today(), UPCOMING_DAYS));
         return "dashboard";
     }

@@ -125,8 +125,12 @@ public class BudgetService {
         }
     }
 
+    /**
+     * {@code base} is what the budgets are worked out from: income after fixed cost of the month, or (while the
+     * month has no income yet, before payday) last month's, with {@code estimated} = true.
+     */
     public record MonthBudget(YearMonth month, StatsService.MonthSummary summary, KindBudget actual,
-                              KindBudget goal) {
+                              KindBudget goal, BigDecimal base, boolean estimated) {
         public KindBudget of(BudgetKind kind) {
             return kind == BudgetKind.GOAL ? goal : actual;
         }
@@ -159,11 +163,16 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public MonthBudget forMonth(YearMonth month) {
-        var rows = stats.totals(month, month);
-        var summary = StatsService.summarize(rows, month, month).get(0);
-        Map<BudgetGroup, BigDecimal> spent = StatsService.byGroup(rows);
-        return new MonthBudget(month, summary, kind(BudgetKind.ACTUAL, month, summary.base(), spent),
-                kind(BudgetKind.GOAL, month, summary.base(), spent));
+        var rows = stats.totals(month.minusMonths(1), month);
+        var both = StatsService.summarize(rows, month.minusMonths(1), month);
+        var summary = both.get(1);
+        var previous = both.get(0);
+        // The salary arrives on the 28th: until this month has income, budget from last month's income after fixed cost.
+        boolean estimated = summary.income().signum() == 0 && previous.income().signum() > 0;
+        BigDecimal base = estimated ? previous.base() : summary.base();
+        Map<BudgetGroup, BigDecimal> spent = StatsService.byGroup(rows.stream().filter(r -> r.month().equals(month)).toList());
+        return new MonthBudget(month, summary, kind(BudgetKind.ACTUAL, month, base, spent),
+                kind(BudgetKind.GOAL, month, base, spent), base, estimated);
     }
 
     /** The rule in force per group for a month (missing = never set). */

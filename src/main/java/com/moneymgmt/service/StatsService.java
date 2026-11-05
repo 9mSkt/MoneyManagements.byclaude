@@ -54,20 +54,12 @@ public class StatsService {
 
     private final TransactionRepository transactions;
     private final CategoryRepository categories;
-    /** Day of the month the salary is paid; income from this day on is next month's money (0 = off). */
-    private final int payday;
 
-    public StatsService(TransactionRepository transactions, CategoryRepository categories,
-                        @org.springframework.beans.factory.annotation.Value("${app.budget.payday:28}") int payday) {
+    public StatsService(TransactionRepository transactions, CategoryRepository categories) {
         this.transactions = transactions;
         this.categories = categories;
-        this.payday = payday;
     }
 
-    /**
-     * Totals per month and category. Income received on or after {@link #payday} counts toward the next month
-     * (the salary paid on the 28th of October is the money for November); expenses count in their own month.
-     */
     @Transactional(readOnly = true)
     public List<CatTotal> totals(YearMonth from, YearMonth to) {
         Map<Long, Category> cats = categories.findAll().stream()
@@ -77,52 +69,7 @@ public class StatsService {
             rows.add(new CatTotal(YearMonth.of(r.year(), r.month()), cats.get(r.categoryId()), r.type(),
                     Money.scale(r.amount())));
         }
-        Map<YearMonth, Map<Long, BigDecimal>> income = new LinkedHashMap<>();
-        for (Object[] r : transactions.incomeByDayAndCategory(from.minusMonths(1).atDay(1), to.atEndOfMonth())) {
-            YearMonth m = budgetMonth((LocalDate) r[0], payday);
-            if (!m.isBefore(from) && !m.isAfter(to)) {
-                income.computeIfAbsent(m, k -> new LinkedHashMap<>()).merge((Long) r[1], (BigDecimal) r[2], BigDecimal::add);
-            }
-        }
-        income.forEach((m, byCat) -> byCat.forEach((catId, sum) ->
-                rows.add(new CatTotal(m, cats.get(catId), TxType.INCOME, Money.scale(sum)))));
         return rows;
-    }
-
-    /** The month an income dated {@code date} is the money for: the next month from that month's payday on. */
-    public static YearMonth budgetMonth(LocalDate date, int payday) {
-        YearMonth m = YearMonth.from(date);
-        LocalDate pay = payDate(m, payday);
-        return pay != null && !date.isBefore(pay) ? m.plusMonths(1) : m;
-    }
-
-    /**
-     * The days whose income is the money for {@code month}: from last month's payday to the day before this
-     * month's payday ({from, to}). The whole calendar month when the payday rule is off.
-     */
-    public static LocalDate[] payPeriod(YearMonth month, int payday) {
-        LocalDate from = payDate(month.minusMonths(1), payday);
-        LocalDate next = payDate(month, payday);
-        return new LocalDate[] {from == null ? month.atDay(1) : from, next == null ? month.atEndOfMonth() : next.minusDays(1)};
-    }
-
-    /**
-     * The day the salary is paid in a month: the payday (28th), or the last weekday before it when it falls
-     * on a Saturday or Sunday. Null when the payday rule is off.
-     */
-    public static LocalDate payDate(YearMonth month, int payday) {
-        if (payday < 1) {
-            return null;
-        }
-        LocalDate d = month.atDay(Math.min(payday, month.lengthOfMonth()));
-        while (d.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || d.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
-            d = d.minusDays(1);
-        }
-        return d;
-    }
-
-    public int getPayday() {
-        return payday;
     }
 
     public MonthSummary summary(YearMonth month) {

@@ -199,28 +199,19 @@ public class TransactionController {
     @GetMapping("/incentive")
     public String incentive(@RequestParam(required = false) String month, Model model) {
         YearMonth ym = orThisMonth(month);
-        var entry = incentives.forMonth(ym);
-        IncentiveForm f = IncentiveForm.of(ym, entry);
-        if (entry.incentive() == null) {
-            // Paid with the salary: today if today belongs to this month's pay period, else last month's payday.
-            java.time.LocalDate[] period = incentives.payPeriod(ym);
-            f.setDate(incentives.monthOf(AppTime.today()).equals(ym) ? AppTime.today() : period[0]);
-        }
-        model.addAttribute("form", f);
+        model.addAttribute("form", IncentiveForm.of(ym, incentives.forMonth(ym)));
         model.addAttribute("errors", Map.of());
         model.addAttribute("history", incentives.history(12));
-        model.addAttribute("period", incentives.payPeriod(ym));
         return "transactions/incentive";
     }
 
     @PostMapping("/incentive")
     public String saveIncentive(@ModelAttribute("form") IncentiveForm f, org.springframework.validation.BindingResult binding,
                                 Model model, RedirectAttributes flash) {
-        Map<String, String> errors = FixedCostController.withBindingErrors(binding, f.validate(incentives::monthOf));
+        Map<String, String> errors = FixedCostController.withBindingErrors(binding, f.validate());
         if (!errors.isEmpty()) {
             model.addAttribute("errors", errors);
             model.addAttribute("history", incentives.history(12));
-            model.addAttribute("period", incentives.payPeriod(f.yearMonth()));
             return "transactions/incentive";
         }
         incentives.save(f.toInput());

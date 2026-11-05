@@ -158,7 +158,6 @@
                                     <span class="chip" th:if="${t.installment != null and t.installmentNo != null}"
                                           th:text="${t.installmentNo + '/' + t.installment.months}">3/10</span>
                                           <span class="chip fee-chip" th:if="${t.fee != null}" th:text="#{tx.feeChip(${@fmt.baht(t.fee)})}">incl. fee</span>
-                                          <span class="chip pay-chip" th:if="${@fmt.countsFor(t) != null}" th:text="#{tx.countsFor(${#temporals.format(@fmt.countsFor(t), 'MMMM yyyy', #locale)})}">for December</span>
                                     <span class="chip" th:if="${t.kpiPercent != null}"
                                           th:text="#{incentive.kpiShort(${@fmt.percent(t.kpiPercent)})}">KPI</span>
                                     <span class="tags" th:if="${t.tags != null}" th:text="${'#' + #strings.replace(t.tags, ', ', ' #')}">#tag</span>

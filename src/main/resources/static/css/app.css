@@ -501,4 +501,3 @@ dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
 .price-row .input { text-align: right; font-variant-numeric: tabular-nums; }
 .price-row .field-error { grid-column: 1 / -1; }
 .trade-preview { min-height: 1.2em; margin: -4px 0 12px; font-variant-numeric: tabular-nums; }
-.pay-chip { background: color-mix(in srgb, var(--income) 16%, transparent); color: var(--income); }

@@ -36,6 +36,7 @@
                 <h2 th:text="#{dashboard.budget}">Budget</h2>
                 <a class="link-small" th:href="@{/budget(month=${month})}" th:text="#{dashboard.openBudget}">Budget</a>
             </div>
+            <p class="muted small" th:if="${budgetEstimated}" th:text="#{budget.estimatedNote(${@fmt.baht(budgetBase)})}">Estimated</p>
             <p class="muted small" th:if="${#lists.isEmpty(budget.withBudget())}" th:text="#{budget.noneSet}">No budget set.</p>
             <th:block th:replace="~{fragments/budget :: bars(${budget.withBudget()})}"/>
         </div>

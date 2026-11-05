@@ -28,7 +28,7 @@ public class ImportController {
     private final int payday;
 
     public ImportController(ImportBatchRepository batches, ImportService importService,
-                            @org.springframework.beans.factory.annotation.Value("${app.budget.payday:28}") int payday) {
+                            @org.springframework.beans.factory.annotation.Value("${app.salary.payday:28}") int payday) {
         this.batches = batches;
         this.importService = importService;
         this.payday = payday;

@@ -119,7 +119,7 @@ public class BudgetController {
         model.addAttribute("rows", rows);
         model.addAttribute("errors", errors);
         model.addAttribute("laterToo", laterToo);
-        model.addAttribute("summary", budgets.forMonth(ym).summary());
+        model.addAttribute("base", budgets.forMonth(ym).base());
         return "budget/edit";
     }
 }

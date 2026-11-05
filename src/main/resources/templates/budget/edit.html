@@ -13,11 +13,11 @@
         </div>
 
         <div class="info-list">
-            <span th:text="#{budget.baseThisMonth(${@fmt.baht(summary.base())})}">Income after fixed cost: ฿0</span>
+            <span th:text="#{budget.baseThisMonth(${@fmt.baht(base)})}">Income after fixed cost: ฿0</span>
         </div>
         <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
 
-        <form th:action="@{/budget/edit}" method="post" data-budget-form th:attr="data-base=${summary.base()}">
+        <form th:action="@{/budget/edit}" method="post" data-budget-form th:attr="data-base=${base}">
             <input type="hidden" name="month" th:value="${month}">
             <input type="hidden" name="kind" th:value="${kind}">
 
