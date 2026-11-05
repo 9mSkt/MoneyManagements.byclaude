@@ -31,16 +31,27 @@ public class TransactionController {
     private final PostingService posting;
     private final IncentiveService incentives;
     private final com.moneymgmt.service.BudgetService budgets;
+    private final com.moneymgmt.repo.InstallmentRepository plans;
+
+    /** An installment plan as seen in one month: which payment falls in it. */
+    public record MonthPlan(com.moneymgmt.domain.Installment plan, int no) {
+        public java.math.BigDecimal progress() {
+            return com.moneymgmt.util.Money.percent(java.math.BigDecimal.valueOf(no),
+                    java.math.BigDecimal.valueOf(plan.getMonths()));
+        }
+    }
 
     public TransactionController(TransactionService service, TransactionRepository transactions,
                                  CategoryRepository categories, PostingService posting, IncentiveService incentives,
-                                 com.moneymgmt.service.BudgetService budgets) {
+                                 com.moneymgmt.service.BudgetService budgets,
+                                 com.moneymgmt.repo.InstallmentRepository plans) {
         this.service = service;
         this.transactions = transactions;
         this.categories = categories;
         this.posting = posting;
         this.incentives = incentives;
         this.budgets = budgets;
+        this.plans = plans;
     }
 
     /** List with filters. An HTMX request (filter change) gets only the results part of the page. */
@@ -68,6 +79,9 @@ public class TransactionController {
         model.addAttribute("overIds", ym == null ? java.util.Set.of() : budgets.overBudgetIds(ym));
         if (ym != null) {
             model.addAttribute("incentive", incentives.forMonth(ym));
+            // Installment plans with a payment in this month (shown above the list).
+            model.addAttribute("monthPlans", plans.findAllForList().stream().filter(p -> p.hasPaymentIn(ym))
+                    .map(p -> new MonthPlan(p, p.paymentNoIn(ym))).toList());
         }
         boolean hx = request.getHeader("HX-Request") != null;
         model.addAttribute("hx", hx);

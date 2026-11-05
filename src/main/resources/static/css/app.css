@@ -439,3 +439,21 @@ dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
 .schedule li.s-paid .chip { background: color-mix(in srgb, var(--income) 18%, transparent); color: var(--income); }
 .schedule li.s-due .chip { background: color-mix(in srgb, var(--warning) 22%, transparent); color: var(--text); }
 .schedule li.s-upcoming .title { color: var(--text-muted); }
+/* Installments section on Transactions, and the 1/X preview on the add form */
+.month-plans summary { list-style: none; cursor: pointer; margin-bottom: 4px; }
+.month-plans summary::-webkit-details-marker { display: none; }
+.month-plans summary h2::before { content: "▸"; display: inline-block; margin-right: 8px; color: var(--text-muted); transition: transform .15s; }
+.month-plans[open] summary h2::before { transform: rotate(90deg); }
+.month-plans .list li { display: block; padding: 0; }
+.month-plan { display: block; padding: 10px 4px; color: var(--text); border-radius: 8px; }
+.month-plan:hover { background: var(--surface-2); text-decoration: none; }
+.month-plan .plan-top { margin-bottom: 6px; }
+.month-plan .title { font-weight: 500; }
+.plan-bar { display: flex; align-items: center; gap: 10px; }
+.plan-bar .track { flex: 1; }
+.plan-bar strong { font-size: 0.85rem; min-width: 3.5em; text-align: right; }
+.period-preview { margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); font-size: 0.84rem; display: grid; gap: 4px; }
+.period-preview .pv-title { font-weight: 600; color: var(--primary); }
+.period-preview .pv-bad { color: var(--over); }
+.period-preview .pv-list { margin: 0; padding-left: 18px; }
+.period-preview .pv-this { font-weight: 600; }

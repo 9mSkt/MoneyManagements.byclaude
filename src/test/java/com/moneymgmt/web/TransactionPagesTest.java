@@ -274,6 +274,16 @@ class TransactionPagesTest extends AbstractWebTest {
         mvc.perform(get("/transactions").param("month", "2031-11"))
                 .andExpect(content().string(containsString("3/3")));
 
+        // The Transactions page lists the plans with a payment that month.
+        mvc.perform(get("/transactions").param("month", "2031-10").param("lang", "en"))
+                .andExpect(content().string(containsString("Installments this month (1)")))
+                .andExpect(content().string(containsString("First Sep 2031")))
+                .andExpect(content().string(containsString("2/3")));
+        mvc.perform(get("/transactions").param("month", "2031-12").param("lang", "en"))
+                .andExpect(content().string(not(containsString("Installments this month"))));
+        mvc.perform(get("/transactions/new").param("lang", "th"))
+                .andExpect(content().string(containsString("ตัวอย่างรายการผ่อน")));
+
         // First payment month = the month the 1/3 entry was added; schedule lists each payment.
         mvc.perform(get("/fixed-costs").param("lang", "en"))
                 .andExpect(content().string(containsString("Sep 2031 · 1/3")))

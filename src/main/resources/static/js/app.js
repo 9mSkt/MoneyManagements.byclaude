@@ -130,6 +130,75 @@
     document.querySelectorAll('[data-installment-form]').forEach(updateInstallment);
   });
 
+  // ---------- Installment period preview: "1/3" on the add form shows the plan it will start ----------
+  // Gregorian years in Thai too (2026, not 2569), matching the rest of the app.
+  var pageLocale = (document.documentElement.lang === 'th') ? 'th-TH-u-ca-gregory' : 'en-GB';
+  var monthFmt = new Intl.DateTimeFormat(pageLocale, { month: 'short', year: 'numeric' });
+  var moneyFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function fill(template, args) {
+    return template.replace(/\{(\d)\}/g, function (m, i) { return args[Number(i)]; });
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (text != null) { e.textContent = text; }
+    return e;
+  }
+  function updatePeriodPreview(form) {
+    var box = form.querySelector('[data-period-preview]');
+    var input = form.querySelector('input[name="period"]');
+    if (!box || !input) { return; }
+    var text = input.value.trim();
+    box.textContent = '';
+    if (!text || input.disabled || input.readOnly) { box.hidden = true; return; }
+    box.hidden = false;
+    var m = /^(\d{1,3})\s*\/\s*(\d{1,3})$/.exec(text);
+    var no = m ? Number(m[1]) : 0;
+    var count = m ? Number(m[2]) : 0;
+    if (!m || no < 1 || no > count || count > 120) {
+      box.appendChild(el('div', 'pv-bad', box.getAttribute('data-t-bad')));
+      return;
+    }
+    var amount = num(form.querySelector('input[name="amount"]'));
+    var dateVal = (form.querySelector('input[name="date"]') || {}).value || '';
+    var parts = dateVal.split('-');
+    var base = parts.length === 3 ? new Date(Number(parts[0]), Number(parts[1]) - 1, 1) : new Date();
+    base = new Date(base.getFullYear(), base.getMonth(), 1);
+    function monthOf(k) { return new Date(base.getFullYear(), base.getMonth() + (k - no), 1); }
+    function label(k) { return monthFmt.format(monthOf(k)); }
+
+    box.appendChild(el('div', 'pv-title', box.getAttribute('data-t-title')));
+    box.appendChild(el('div', 'pv-line', fill(box.getAttribute('data-t-payments'),
+      [count, '฿' + moneyFmt.format(amount), '฿' + moneyFmt.format(amount * count)])));
+    var ul = el('ul', 'pv-list');
+    ul.appendChild(el('li', null, fill(box.getAttribute('data-t-first'), [count, label(1)])));
+    if (no > 1) { ul.appendChild(el('li', 'pv-this', fill(box.getAttribute('data-t-this'), [no, count, label(no)]))); }
+    else { ul.lastChild.className = 'pv-this'; }
+    ul.appendChild(el('li', null, fill(box.getAttribute('data-t-last'), [count, label(count)])));
+    box.appendChild(ul);
+    if (no >= count) {
+      box.appendChild(el('div', 'pv-line muted', box.getAttribute('data-t-none')));
+    } else {
+      var next = [];
+      for (var k = no + 1; k <= count && next.length < 6; k++) {
+        next.push(k + '/' + count + ' ' + new Intl.DateTimeFormat(pageLocale, { day: 'numeric', month: 'short' }).format(monthOf(k)));
+      }
+      if (count - no > 6) { next.push('…'); }
+      box.appendChild(el('div', 'pv-line muted', fill(box.getAttribute('data-t-next'), [next.join(' · ')])));
+    }
+  }
+  document.addEventListener('input', function (e) {
+    var form = e.target.closest && e.target.closest('[data-tx-form]');
+    if (form && /^(period|amount|date)$/.test(e.target.name || '')) { updatePeriodPreview(form); }
+  });
+  document.addEventListener('change', function (e) {
+    var form = e.target.closest && e.target.closest('[data-tx-form]');
+    if (form) { updatePeriodPreview(form); }
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-tx-form]').forEach(updatePeriodPreview);
+  });
+
   // ---------- Budget form: % / ฿ / none per group, with the baht it works out to ----------
   var bahtFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function updateBudgetRow(row, base) {

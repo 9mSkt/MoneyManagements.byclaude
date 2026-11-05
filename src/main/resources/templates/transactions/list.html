@@ -102,6 +102,36 @@
                th:text="${incentive.incentive == null} ? #{incentive.add} : #{incentive.edit}">Edit</a>
         </div>
 
+        <!-- Installment plans with a payment in this month -->
+        <details class="card month-plans" open th:if="${monthPlans != null and !#lists.isEmpty(monthPlans) and !filter.filtered}">
+            <summary class="card-head">
+                <h2 th:text="#{tx.plans.title(${#lists.size(monthPlans)})}">Installments this month (2)</h2>
+                <a class="link-small" th:href="@{/fixed-costs}" th:text="#{tx.plans.all}">All plans</a>
+            </summary>
+            <ul class="list">
+                <li th:each="mp : ${monthPlans}" th:with="p=${mp.plan}">
+                    <a class="month-plan" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})}">
+                        <div class="plan-top">
+                            <span class="title" th:text="${p.item}">iPhone</span>
+                            <span class="amount expense" th:text="#{inst.perMonth(${@fmt.baht(p.monthlyAmount)})}">฿0 / month</span>
+                        </div>
+                        <div class="plan-bar">
+                            <div class="track" role="progressbar" aria-valuemin="0" th:aria-valuemax="${p.months}"
+                                 th:aria-valuenow="${mp.no}" th:aria-label="${p.item}">
+                                <div class="fill" th:style="'width:' + ${mp.progress()} + '%'"></div>
+                            </div>
+                            <strong class="num" th:text="${mp.no + '/' + p.months}">3/20</strong>
+                        </div>
+                        <div class="sub plan-meta">
+                            <span th:text="#{tx.plans.first(${#temporals.format(p.startMonth, 'MMM yyyy', #locale)})}">First Sep 2026</span>
+                            <span th:text="#{tx.plans.last(${#temporals.format(p.endMonth, 'MMM yyyy', #locale)})}">Last Apr 2028</span>
+                            <span th:unless="${p.finished}" th:text="#{inst.remaining(${@fmt.baht(p.remainingDebt)})}">฿0 left</span>
+                        </div>
+                    </a>
+                </li>
+            </ul>
+        </details>
+
         <div class="card">
             <p class="muted" th:if="${result.truncated}" th:text="#{tx.truncated(${T(com.moneymgmt.service.TransactionService).MAX_ROWS})}">Showing first 500.</p>
             <p class="over-note" th:unless="${#sets.isEmpty(overIds)}">

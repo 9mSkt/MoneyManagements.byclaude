@@ -56,6 +56,12 @@
                autocomplete="off" inputmode="text" th:placeholder="#{tx.period.placeholder}"
                th:readonly="${f.linked}" th:disabled="${f.type.name() != 'EXPENSE'}">
         <div class="field-error" th:if="${err.containsKey('period')}" th:text="#{${err.get('period')}}">Error</div>
+        <!-- Live preview of the plan this entry will start (filled in by app.js as you type) -->
+        <div class="period-preview" data-period-preview hidden th:unless="${f.linked}"
+             th:attr="data-t-title=#{tx.period.pv.title},data-t-payments=#{tx.period.pv.payments},
+                      data-t-first=#{tx.period.pv.first},data-t-this=#{tx.period.pv.this},
+                      data-t-last=#{tx.period.pv.last},data-t-next=#{tx.period.pv.next},
+                      data-t-none=#{tx.period.pv.none},data-t-bad=#{tx.period.pv.bad}"></div>
         <div class="hint" th:text="${f.linked} ? #{tx.period.linked} : #{tx.period.hint}">Hint</div>
     </div>
 
