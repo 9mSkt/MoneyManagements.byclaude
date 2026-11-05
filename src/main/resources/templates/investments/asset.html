@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${asset.name}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack" th:with="ccy=${asset.currency}">
+    <div class="page-tools">
+        <div class="asset-head">
+            <span class="type-chip" th:classappend="${'t-' + asset.type}" th:text="#{${'inv.type.' + asset.type}}">Fund</span>
+            <span class="muted small" th:text="${ccy}">THB</span>
+            <span class="muted small" th:if="${h.price != null}"
+                  th:text="#{inv.priceOn(${@fmt.money(h.price, ccy)}, ${#temporals.format(h.priceDate, 'd MMM yyyy', #locale)})}">Price</span>
+        </div>
+        <div class="actions">
+            <a class="link-small" th:href="@{/investments}" th:text="#{inv.back}">Back</a>
+            <a class="btn secondary small-btn" th:href="@{/investments/{id}/edit(id=${asset.id})}" th:text="#{budget.edit}">Edit</a>
+        </div>
+    </div>
+
+    <div class="grid kpis">
+        <div class="card kpi">
+            <div class="label" th:text="#{inv.kpi.value}">Value</div>
+            <div class="value amount investment" th:text="${@fmt.baht(h.valueThb)}">฿0</div>
+            <div class="kpi-help" th:if="${h.foreign}" th:text="${@fmt.money(h.valueCcy, ccy)} + ' × ' + ${@fmt.number(h.fx, 4)}">$</div>
+        </div>
+        <div class="card kpi">
+            <div class="label" th:text="#{inv.units}">Units</div>
+            <div class="value amount" th:text="${@fmt.number(h.units, 6)}">0</div>
+            <div class="kpi-help" th:text="#{inv.avgCost(${@fmt.money(h.avgCost, ccy)})}">Average cost</div>
+        </div>
+        <div class="card kpi">
+            <div class="label" th:text="#{inv.kpi.profit}">Profit</div>
+            <div class="value amount" th:classappend="${@fmt.gain(h.unrealizedThb())}" th:text="${@fmt.signedBaht(h.unrealizedThb())}">฿0</div>
+            <div class="kpi-help" th:text="${@fmt.signedPercent(h.profitPercent())} + (${h.foreign} ? ' · ' + #{inv.inCcy(${@fmt.signedPercent(h.profitPercentCcy())}, ${ccy})} : '')">0%</div>
+        </div>
+        <div class="card kpi">
+            <div class="label" th:text="#{inv.kpi.cost}">Invested</div>
+            <div class="value amount" th:text="${@fmt.baht(h.costThb)}">฿0</div>
+            <div class="kpi-help" th:if="${h.foreign}" th:text="${@fmt.money(h.costCcy, ccy)}">$</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <dl class="facts">
+            <div><dt th:text="#{inv.realized}">Realized profit</dt>
+                <dd class="amount" th:classappend="${@fmt.gain(h.realizedThb)}" th:text="${@fmt.signedBaht(h.realizedThb)}">฿0</dd></div>
+            <div><dt th:text="#{inv.dividendsNet}">Dividends (after tax)</dt>
+                <dd class="amount income" th:text="${@fmt.baht(h.dividendsThb)} + (${h.foreign} ? ' (' + ${@fmt.money(h.dividendsCcy, ccy)} + ')' : '')">฿0</dd></div>
+            <div><dt th:text="#{inv.withholding}">Withholding tax</dt>
+                <dd class="amount" th:text="${@fmt.money(h.withholdingCcy, ccy)}">0</dd></div>
+            <div><dt th:text="#{inv.fees}">Fees paid</dt>
+                <dd class="amount" th:text="${@fmt.money(h.feesCcy, ccy)}">0</dd></div>
+            <div><dt th:text="#{inv.totalReturn}">Total return</dt>
+                <dd class="amount" th:classappend="${@fmt.gain(h.totalReturnThb())}" th:text="${@fmt.signedBaht(h.totalReturnThb())}">฿0</dd></div>
+        </dl>
+    </div>
+
+    <div class="card">
+        <div class="card-head wrap">
+            <h2 th:text="#{inv.trades}">Buy and sell history</h2>
+            <div class="actions">
+                <a class="btn small-btn" th:href="@{/investments/{id}/trades/new(id=${asset.id},side='BUY')}" th:text="#{inv.buy}">Buy</a>
+                <a class="btn secondary small-btn" th:href="@{/investments/{id}/trades/new(id=${asset.id},side='SELL')}" th:text="#{inv.sell}">Sell</a>
+            </div>
+        </div>
+        <p class="muted" th:if="${#lists.isEmpty(trades)}" th:text="#{inv.noTrades}">No trades yet.</p>
+        <ul class="list">
+            <li th:each="t : ${trades}">
+                <a class="holding-row" th:href="@{/investments/{id}/trades/{tid}/edit(id=${asset.id},tid=${t.id})}">
+                    <span class="side-chip" th:classappend="${t.side == T(com.moneymgmt.domain.TradeSide).BUY} ? 'buy' : 'sell'"
+                          th:text="#{${'inv.side.' + t.side}}">Buy</span>
+                    <div class="grow">
+                        <div class="title" th:text="#{inv.unitsAt(${@fmt.number(t.units, 6)}, ${@fmt.money(t.pricePerUnit, ccy)})}">1 @ $700</div>
+                        <div class="sub">
+                            <span th:text="${#temporals.format(t.tradeDate, 'd MMM yyyy', #locale)}">5 Nov 2026</span>
+                            <span th:if="${t.fee != null and t.fee.signum() > 0}" th:text="'· ' + #{inv.feeShort(${@fmt.money(t.fee, ccy)})}">fee</span>
+                            <span th:if="${t.fxRate != null}" th:text="'· ' + #{inv.fxShort(${@fmt.number(t.fxRate, 4)})}">fx</span>
+                        </div>
+                    </div>
+                    <div class="right amount" th:text="${@fmt.money(t.amount, ccy)}">$0</div>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="grid two-even">
+        <div class="card">
+            <div class="card-head">
+                <h2 th:text="#{inv.dividends}">Dividends</h2>
+                <a class="btn secondary small-btn" th:href="@{/investments/{id}/dividends/new(id=${asset.id})}" th:text="#{fixed.add}">Add</a>
+            </div>
+            <p class="muted" th:if="${#lists.isEmpty(dividends)}" th:text="#{inv.noDividends}">None yet.</p>
+            <ul class="list">
+                <li th:each="d : ${dividends}">
+                    <a class="holding-row" th:href="@{/investments/{id}/dividends/{did}/edit(id=${asset.id},did=${d.id})}">
+                        <div class="grow">
+                            <div class="title" th:text="${#temporals.format(d.payDate, 'd MMM yyyy', #locale)}">27 Jun 2026</div>
+                            <div class="sub" th:text="#{inv.whtShort(${@fmt.money(d.withholdingTax, ccy)})}">tax</div>
+                        </div>
+                        <div class="right amount income" th:text="${@fmt.money(d.amount.subtract(d.withholdingTax), ccy)}">$0</div>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-head">
+                <h2 th:text="#{inv.priceHistory}">Price history</h2>
+                <a class="btn secondary small-btn" th:href="@{/investments/prices}" th:text="#{inv.updatePrices}">Update</a>
+            </div>
+            <p class="muted" th:if="${#lists.isEmpty(priceHistory)}" th:text="#{inv.noPrices}">None yet.</p>
+            <ul class="list">
+                <li th:each="ph : ${priceHistory}">
+                    <div class="grow" th:text="${#temporals.format(ph.date, 'd MMM yyyy', #locale)}">5 Nov 2026</div>
+                    <span class="amount" th:text="${@fmt.money(ph.price, ccy)}">$0</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <form class="card danger-zone" th:action="@{/investments/{id}/delete(id=${asset.id})}" method="post"
+          th:attr="data-confirm=#{inv.delete.confirm}">
+        <div class="grow">
+            <strong th:text="#{inv.delete}">Delete</strong>
+            <div class="muted small" th:text="#{inv.delete.desc}">Removes trades too.</div>
+        </div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${asset.name}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow" th:with="foreign=${asset.currency != 'THB'}, ccy=${asset.currency}">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.entryId == null} ? #{inv.newDividend(${asset.name})} : #{inv.editDividend(${asset.name})}">Dividend</h2>
+            <a class="link-small" th:href="@{/investments/{id}(id=${asset.id})}" th:text="#{inv.back}">Back</a>
+        </div>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+        <form th:action="@{/investments/{id}/dividends(id=${asset.id})}" method="post" th:object="${form}">
+            <input type="hidden" th:field="*{entryId}">
+            <div class="field" th:classappend="${errors.containsKey('date')} ? 'has-error'">
+                <label for="date" th:text="#{inv.payDate}">Paid on</label>
+                <input class="input" type="date" id="date" name="date" th:value="*{date}" required>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('amount')} ? 'has-error'">
+                    <label for="amount" th:text="#{inv.dividendGross(${ccy})}">Dividend before tax</label>
+                    <input class="input" id="amount" th:field="*{amount}" inputmode="decimal" autocomplete="off" required maxlength="20">
+                    <div class="field-error" th:if="${errors.containsKey('amount')}" th:text="#{${errors.get('amount')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('withholding')} ? 'has-error'">
+                    <label for="wht" th:text="#{inv.withholdingIn(${ccy})}">Withholding tax</label>
+                    <input class="input" id="wht" th:field="*{withholding}" inputmode="decimal" autocomplete="off" maxlength="20" placeholder="0">
+                    <div class="field-error" th:if="${errors.containsKey('withholding')}" th:text="#{${errors.get('withholding')}}">Error</div>
+                </div>
+            </div>
+            <div class="field" th:if="${foreign}" th:classappend="${errors.containsKey('fxRate')} ? 'has-error'">
+                <label for="fx" th:text="#{inv.fxRate(${ccy})}">Rate</label>
+                <input class="input" id="fx" th:field="*{fxRate}" inputmode="decimal" autocomplete="off" maxlength="20">
+                <div class="field-error" th:if="${errors.containsKey('fxRate')}" th:text="#{${errors.get('fxRate')}}">Error</div>
+                <div class="hint" th:text="#{inv.fxOptional}">Empty: the rate known on that day.</div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/investments/{id}(id=${asset.id})}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+    <form th:if="${form.entryId != null}" class="card danger-zone"
+          th:action="@{/investments/{id}/dividends/{did}/delete(id=${asset.id},did=${form.entryId})}" method="post"
+          th:attr="data-confirm=#{inv.dividendDelete.confirm}">
+        <div class="grow"><strong th:text="#{inv.dividendDelete}">Delete dividend</strong></div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>

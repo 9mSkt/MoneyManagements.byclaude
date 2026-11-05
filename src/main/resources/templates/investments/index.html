@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.investments}, ~{::content}, ~{::scripts})}">
+<body>
+<section th:fragment="content" class="stack">
+    <div class="page-tools">
+        <div class="muted small" th:if="${p.usdThb != null}"
+             th:text="#{inv.usdRate(${@fmt.number(p.usdThb, 4)}, ${p.usdDate == null ? '' : #temporals.format(p.usdDate, 'd MMM yyyy', #locale)})}">USD/THB 32.98</div>
+        <div class="actions">
+            <a class="btn secondary" th:href="@{/investments/prices}" th:text="#{inv.updatePrices}">Update prices</a>
+            <a class="btn" th:href="@{/investments/assets/new}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                <span th:text="#{inv.addAsset}">Add fund or ETF</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="notice" th:if="${p.missingFx}">
+        <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#info}"/></svg>
+        <span th:text="#{inv.missingFx}">Type the USD/THB rate on Update prices.</span>
+    </div>
+
+    <div class="grid kpis">
+        <div class="card kpi">
+            <div class="bar-accent investment"></div>
+            <div class="label" th:text="#{inv.kpi.value}">Portfolio value</div>
+            <div class="value amount investment" th:text="${@fmt.baht(p.valueThb())}">฿0</div>
+            <div class="kpi-help" th:text="#{inv.kpi.value.help}">At the latest prices</div>
+        </div>
+        <div class="card kpi">
+            <div class="bar-accent primary"></div>
+            <div class="label" th:text="#{inv.kpi.cost}">Invested</div>
+            <div class="value amount" th:text="${@fmt.baht(p.costThb())}">฿0</div>
+            <div class="kpi-help" th:text="#{inv.kpi.cost.help}">Cost of units held</div>
+        </div>
+        <div class="card kpi">
+            <div class="bar-accent" th:classappend="${@fmt.gain(p.unrealizedThb())}"></div>
+            <div class="label" th:text="#{inv.kpi.profit}">Profit</div>
+            <div class="value amount" th:classappend="${@fmt.gain(p.unrealizedThb())}"
+                 th:text="${@fmt.signedBaht(p.unrealizedThb())}">฿0</div>
+            <div class="kpi-help" th:text="${@fmt.signedPercent(p.profitPercent())}">0%</div>
+        </div>
+        <div class="card kpi">
+            <div class="bar-accent income"></div>
+            <div class="label" th:text="#{inv.kpi.dividends}">Dividends</div>
+            <div class="value amount income" th:text="${@fmt.baht(p.dividendsThb())}">฿0</div>
+            <div class="kpi-help" th:text="#{inv.kpi.realized(${@fmt.signedBaht(p.realizedThb())})}">Realized</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{inv.holdings}">Holdings</h2></div>
+        <p class="muted" th:if="${#lists.isEmpty(p.holdings)}" th:text="#{inv.none}">No funds or ETFs yet.</p>
+        <ul class="list holdings">
+            <li th:each="h : ${p.open()}">
+                <a class="holding-row" th:href="@{/investments/{id}(id=${h.asset.id})}">
+                    <span class="type-chip" th:classappend="${'t-' + h.asset.type}" th:text="#{${'inv.typeShort.' + h.asset.type}}">Fund</span>
+                    <div class="grow">
+                        <div class="title" th:text="${h.asset.name}">VGT</div>
+                        <div class="sub">
+                            <span th:text="#{inv.unitsAt(${@fmt.number(h.units, 4)}, ${@fmt.money(h.price, h.asset.currency)})}">1.2 @ $700</span>
+                            <span th:if="${h.priceDate != null}" th:text="'· ' + ${#temporals.format(h.priceDate, 'd MMM', #locale)}">· 5 Nov</span>
+                        </div>
+                    </div>
+                    <div class="right">
+                        <div class="amount" th:text="${@fmt.baht(h.valueThb)}">฿0</div>
+                        <div class="amount small" th:classappend="${@fmt.gain(h.unrealizedThb())}"
+                             th:text="${@fmt.signedBaht(h.unrealizedThb())} + ' · ' + ${@fmt.signedPercent(h.profitPercent())}">+฿0</div>
+                    </div>
+                </a>
+            </li>
+        </ul>
+        <details class="closed-holdings" th:unless="${#lists.isEmpty(p.closed())}">
+            <summary th:text="#{inv.closed(${#lists.size(p.closed())})}">Sold or empty (1)</summary>
+            <ul class="list holdings">
+                <li th:each="h : ${p.closed()}">
+                    <a class="holding-row" th:href="@{/investments/{id}(id=${h.asset.id})}">
+                        <span class="type-chip" th:classappend="${'t-' + h.asset.type}" th:text="#{${'inv.typeShort.' + h.asset.type}}">ETF</span>
+                        <div class="grow"><div class="title" th:text="${h.asset.name}">IVV</div></div>
+                        <div class="right amount small" th:classappend="${@fmt.gain(h.realizedThb)}"
+                             th:text="#{inv.realizedShort(${@fmt.signedBaht(h.realizedThb)})}">Realized</div>
+                    </a>
+                </li>
+            </ul>
+        </details>
+    </div>
+
+    <div class="grid two" id="inv-charts" th:attr="data-charts=@{/api/investments/charts}">
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{inv.valueOverTime}">Value over time</h2></div>
+            <div id="chart-inv-history" class="chart"></div>
+        </div>
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{inv.allocation}">Allocation</h2></div>
+            <div id="chart-inv-alloc" class="chart"></div>
+        </div>
+    </div>
+
+    <div class="card" id="dca" th:attr="data-src=@{/api/investments/projection}">
+        <div class="card-head"><h2 th:text="#{inv.dca.title}">DCA projection</h2></div>
+        <p class="muted small" th:text="#{inv.dca.intro}">What regular investing could grow to.</p>
+        <form class="dca-form" data-dca-form onsubmit="return false">
+            <div class="field">
+                <label for="dca-monthly" th:text="#{inv.dca.monthly}">Each month</label>
+                <div class="money-input"><span aria-hidden="true">฿</span>
+                    <input class="input" id="dca-monthly" name="monthly" inputmode="decimal" th:value="${dcaMonthly}"></div>
+            </div>
+            <div class="field">
+                <label for="dca-rate" th:text="#{inv.dca.rate}">Return a year</label>
+                <div class="money-input suffix">
+                    <input class="input" id="dca-rate" name="rate" inputmode="decimal" th:value="${dcaRate}"><span aria-hidden="true">%</span></div>
+            </div>
+            <div class="field">
+                <label for="dca-years" th:text="#{inv.dca.years}">Years</label>
+                <input class="input" id="dca-years" name="years" type="number" min="1" max="50" th:value="${dcaYears}">
+            </div>
+            <div class="field">
+                <label for="dca-start" th:text="#{inv.dca.start}">Start from</label>
+                <div class="money-input"><span aria-hidden="true">฿</span>
+                    <input class="input" id="dca-start" name="start" inputmode="decimal" th:value="${p.valueThb()}"></div>
+            </div>
+        </form>
+        <div class="dca-result" data-dca-result
+             th:attr="data-t=#{inv.dca.result}">—</div>
+        <div id="chart-dca" class="chart"></div>
+        <p class="muted small" th:text="#{inv.dca.note}">Estimate only.</p>
+    </div>
+
+    <details class="card glossary">
+        <summary><h2 th:text="#{inv.glossary}">Glossary</h2></summary>
+        <dl>
+            <th:block th:each="g : ${glossary}">
+                <dt th:text="#{${'inv.term.' + g}}">Term</dt>
+                <dd th:text="#{${'inv.term.' + g + '.desc'}}">Meaning</dd>
+            </th:block>
+        </dl>
+    </details>
+</section>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/echarts-5.6.0.min.js}"></script>
+    <script th:src="@{/js/charts.js}"></script>
+    <script th:src="@{/js/investments.js}"></script>
+</th:block>
+</body>
+</html>

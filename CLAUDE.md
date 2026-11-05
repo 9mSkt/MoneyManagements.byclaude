@@ -13,7 +13,7 @@ Personal finance web app for one user in Thailand (amounts in Thai Baht ฿). Th
 - [x] Phase 1: setup, login, theme, EN/TH switch, layout shell, schema, sheet import, Dashboard mockup
 - [x] Phase 2: transactions, fixed costs and recurring, installments, monthly incentive entry
 - [x] Phase 3: dashboard charts, budget planner (actual + goal, red over-budget)
-- [ ] Phase 4: investment portfolio
+- [x] Phase 4: investment portfolio
 - [ ] Phase 5: yearly Thai tax planner
 - [ ] Phase 6: goals, accounts, reports, daily Google Sheet copy, tests, deploy (Render + Neon)
 

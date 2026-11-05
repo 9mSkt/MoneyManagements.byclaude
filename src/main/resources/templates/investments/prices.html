@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{inv.updatePrices}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="#{inv.updatePrices}">Update prices</h2>
+            <a class="link-small" th:href="@{/investments}" th:text="#{inv.back}">Back</a>
+        </div>
+        <p class="muted small" th:text="#{inv.pricesIntro}">Type today's NAV / prices.</p>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+        <form th:action="@{/investments/prices}" method="post">
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('date')} ? 'has-error'">
+                    <label for="date" th:text="#{inv.priceDate}">Date</label>
+                    <input class="input" type="date" id="date" name="date" th:value="${date}" required>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('usd')} ? 'has-error'">
+                    <label for="usd" th:text="#{inv.usdThb}">USD → THB</label>
+                    <input class="input" id="usd" name="usd" inputmode="decimal" autocomplete="off" maxlength="12"
+                           th:value="${values['usd']}" th:placeholder="${p.usdThb != null} ? ${@fmt.number(p.usdThb, 4)} : '32.50'">
+                    <div class="field-error" th:if="${errors.containsKey('usd')}" th:text="#{${errors.get('usd')}}">Error</div>
+                </div>
+            </div>
+            <div class="price-row" th:each="h : ${p.holdings}" th:with="key=${'price_' + h.asset.id}"
+                 th:classappend="${errors.containsKey(key)} ? 'has-error'">
+                <label th:for="${key}">
+                    <span class="title" th:text="${h.asset.name}">VGT</span>
+                    <span class="sub muted" th:text="${h.price != null} ? #{inv.lastPrice(${@fmt.money(h.price, h.asset.currency)}, ${#temporals.format(h.priceDate, 'd MMM', #locale)})} : #{inv.noPrice}">last</span>
+                </label>
+                <input class="input" th:id="${key}" th:name="${key}" inputmode="decimal" autocomplete="off" maxlength="20"
+                       th:value="${values[key]}" th:placeholder="${h.asset.currency}">
+                <div class="field-error" th:if="${errors.containsKey(key)}" th:text="#{${errors.get(key)}}">Error</div>
+            </div>
+            <p class="muted small" th:text="#{inv.pricesEmpty}">Leave empty to keep.</p>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/investments}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+</body>
+</html>

@@ -69,4 +69,16 @@ public class AssetTrade {
     public BigDecimal getPricePerUnit() { return pricePerUnit; }
     public BigDecimal getUnits() { return units; }
     public BigDecimal getFee() { return fee; }
+
+    /** Changes every value of the trade (edit form). */
+    public void update(LocalDate tradeDate, TradeSide side, BigDecimal amount, BigDecimal fxRate,
+                       BigDecimal pricePerUnit, BigDecimal units, BigDecimal fee) {
+        this.tradeDate = tradeDate;
+        this.side = side;
+        this.amount = amount;
+        this.fxRate = fxRate;
+        this.pricePerUnit = pricePerUnit;
+        this.units = units;
+        this.fee = fee;
+    }
 }

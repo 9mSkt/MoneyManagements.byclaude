@@ -68,5 +68,6 @@ window.MoneyCharts = (function () {
     resizeTimer = setTimeout(function () { charts.forEach(function (c) { c.chart.resize(); }); }, 120);
   });
 
-  return { register: register, baht: baht, short: moneyShort, monthName: monthName, weekdays: weekdays, empty: empty };
+  return { register: register, baht: baht, short: moneyShort, monthName: monthName, weekdays: weekdays, empty: empty,
+           palette: palette };
 })();

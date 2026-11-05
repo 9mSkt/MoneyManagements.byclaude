@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${form.id == null} ? #{inv.addAsset} : #{inv.editAsset}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.id == null} ? #{inv.addAsset} : #{inv.editAsset}">Add</h2>
+            <a class="link-small" th:href="${form.id == null} ? @{/investments} : @{/investments/{id}(id=${form.id})}"
+               th:text="#{inv.back}">Back</a>
+        </div>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+        <form th:action="@{/investments/assets}" method="post" th:object="${form}">
+            <input type="hidden" th:field="*{id}">
+            <div class="field" th:classappend="${errors.containsKey('name')} ? 'has-error'">
+                <label for="name" th:text="#{inv.name}">Name</label>
+                <input class="input" id="name" th:field="*{name}" maxlength="100" required autocomplete="off"
+                       th:placeholder="#{inv.name.hint}">
+                <div class="field-error" th:if="${errors.containsKey('name')}" th:text="#{${errors.get('name')}}">Error</div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label for="type" th:text="#{inv.typeLabel}">Type</label>
+                    <select class="input" id="type" th:field="*{type}">
+                        <option th:each="t : ${types}" th:value="${t}" th:text="#{${'inv.type.' + t}}">Fund</option>
+                    </select>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('currency')} ? 'has-error'">
+                    <label for="ccy" th:text="#{inv.currency}">Currency</label>
+                    <select class="input" id="ccy" th:field="*{currency}">
+                        <option value="THB" th:text="#{inv.ccy.THB}">THB</option>
+                        <option value="USD" th:text="#{inv.ccy.USD}">USD</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('price')} ? 'has-error'">
+                    <label for="price" th:text="#{inv.currentPrice}">Current price / NAV</label>
+                    <input class="input" id="price" th:field="*{price}" inputmode="decimal" autocomplete="off" maxlength="20">
+                    <div class="field-error" th:if="${errors.containsKey('price')}" th:text="#{${errors.get('price')}}">Error</div>
+                </div>
+                <div class="field">
+                    <label for="pdate" th:text="#{inv.priceDate}">Price date</label>
+                    <input class="input" id="pdate" type="date" name="priceDate" th:value="*{priceDate}">
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/investments}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+</body>
+</html>

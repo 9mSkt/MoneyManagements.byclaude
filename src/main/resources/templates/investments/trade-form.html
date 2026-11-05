@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${asset.name}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow"
+         th:with="foreign=${asset.currency != 'THB'}, ccy=${asset.currency}">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.entryId == null} ? #{inv.newTrade(${asset.name})} : #{inv.editTrade(${asset.name})}">New trade</h2>
+            <a class="link-small" th:href="@{/investments/{id}(id=${asset.id})}" th:text="#{inv.back}">Back</a>
+        </div>
+        <p class="muted small" th:text="#{inv.tradeIntro}">Type any two of units, price and amount.</p>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/investments/{id}/trades(id=${asset.id})}" method="post" th:object="${form}" data-trade-form>
+            <input type="hidden" th:field="*{entryId}">
+            <div class="segmented type-switch" role="radiogroup" th:aria-label="#{inv.side}">
+                <label th:each="s : ${T(com.moneymgmt.domain.TradeSide).values()}">
+                    <input type="radio" name="side" th:value="${s}" th:checked="${form.side == s}">
+                    <span th:text="#{${'inv.side.' + s}}">Buy</span>
+                </label>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('date')} ? 'has-error'">
+                    <label for="date" th:text="#{tx.date}">Date</label>
+                    <input class="input" type="date" id="date" name="date" th:value="*{date}" required>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('units')} ? 'has-error'">
+                    <label for="units" th:text="#{inv.units}">Units</label>
+                    <input class="input" id="units" th:field="*{units}" inputmode="decimal" autocomplete="off" maxlength="24" data-t="units">
+                    <div class="field-error" th:if="${errors.containsKey('units')}" th:text="#{${errors.get('units')}}">Error</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('price')} ? 'has-error'">
+                    <label for="price" th:text="#{inv.pricePerUnit(${ccy})}">Price per unit</label>
+                    <input class="input" id="price" th:field="*{price}" inputmode="decimal" autocomplete="off" maxlength="24" data-t="price">
+                    <div class="field-error" th:if="${errors.containsKey('price')}" th:text="#{${errors.get('price')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('amount')} ? 'has-error'">
+                    <label for="amount" th:text="#{inv.amount(${ccy})}">Amount</label>
+                    <input class="input" id="amount" th:field="*{amount}" inputmode="decimal" autocomplete="off" maxlength="24" data-t="amount">
+                    <div class="field-error" th:if="${errors.containsKey('amount')}" th:text="#{${errors.get('amount')}}">Error</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('fee')} ? 'has-error'">
+                    <label for="fee" th:text="#{inv.fee(${ccy})}">Fee</label>
+                    <input class="input" id="fee" th:field="*{fee}" inputmode="decimal" autocomplete="off" maxlength="20" placeholder="0">
+                    <div class="field-error" th:if="${errors.containsKey('fee')}" th:text="#{${errors.get('fee')}}">Error</div>
+                </div>
+                <div class="field" th:if="${foreign}" th:classappend="${errors.containsKey('fxRate')} ? 'has-error'">
+                    <label for="fx" th:text="#{inv.fxRate(${ccy})}">USD → THB rate</label>
+                    <input class="input" id="fx" th:field="*{fxRate}" inputmode="decimal" autocomplete="off" maxlength="20" required>
+                    <div class="field-error" th:if="${errors.containsKey('fxRate')}" th:text="#{${errors.get('fxRate')}}">Error</div>
+                </div>
+            </div>
+            <div class="trade-preview muted small" data-trade-preview th:attr="data-t=#{inv.tradePreview},data-ccy=${ccy}"></div>
+            <label class="check" th:if="${form.entryId == null}">
+                <input type="checkbox" th:field="*{addTransaction}">
+                <span th:text="#{inv.addTransaction}">Also add to Transactions as Investment</span>
+            </label>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/investments/{id}(id=${asset.id})}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+    <form th:if="${form.entryId != null}" class="card danger-zone"
+          th:action="@{/investments/{id}/trades/{tid}/delete(id=${asset.id},tid=${form.entryId})}" method="post"
+          th:attr="data-confirm=#{inv.tradeDelete.confirm}">
+        <div class="grow"><strong th:text="#{inv.tradeDelete}">Delete trade</strong></div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>

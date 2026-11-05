@@ -51,4 +51,12 @@ public class Dividend {
     public BigDecimal getWithholdingTax() { return withholdingTax; }
     public String getCurrency() { return currency; }
     public BigDecimal getFxRate() { return fxRate; }
+
+    /** Changes every value of the dividend (edit form). */
+    public void update(LocalDate payDate, BigDecimal amount, BigDecimal withholdingTax, BigDecimal fxRate) {
+        this.payDate = payDate;
+        this.amount = amount;
+        this.withholdingTax = withholdingTax;
+        this.fxRate = fxRate;
+    }
 }

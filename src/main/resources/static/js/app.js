@@ -212,6 +212,32 @@
     document.querySelectorAll('[data-tx-form]').forEach(updatePeriodPreview);
   });
 
+  // ---------- Trade form: any two of units / price / amount give the third ----------
+  function updateTrade(form) {
+    var out = form.querySelector('[data-trade-preview]');
+    if (!out) { return; }
+    var u = form.querySelector('[data-t="units"]'), p = form.querySelector('[data-t="price"]'),
+        a = form.querySelector('[data-t="amount"]');
+    var hasU = u.value.trim() !== '', hasP = p.value.trim() !== '', hasA = a.value.trim() !== '';
+    var units = num(u), price = num(p), amount = num(a);
+    if (hasU && hasP && !hasA) { amount = units * price; }
+    else if (!hasU && hasP && hasA && price > 0) { units = amount / price; }
+    else if (hasU && !hasP && hasA && units > 0) { price = amount / units; }
+    else if (!(hasU && hasP && hasA)) { out.textContent = ''; return; }
+    var ccy = out.getAttribute('data-ccy') === 'USD' ? '$' : '฿';
+    out.textContent = fill(out.getAttribute('data-t'), [
+      units.toLocaleString('en-US', { maximumFractionDigits: 8 }),
+      ccy + price.toLocaleString('en-US', { maximumFractionDigits: 6 }),
+      ccy + moneyFmt.format(amount)]);
+  }
+  document.addEventListener('input', function (e) {
+    var form = e.target.closest && e.target.closest('[data-trade-form]');
+    if (form) { updateTrade(form); }
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-trade-form]').forEach(updateTrade);
+  });
+
   // ---------- Budget form: % / ฿ / none per group, with the baht it works out to ----------
   var bahtFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function updateBudgetRow(row, base) {
