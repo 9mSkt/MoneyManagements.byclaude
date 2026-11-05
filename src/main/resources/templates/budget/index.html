@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.budget}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack" th:with="s=${budget.summary}">
+    <div class="page-tools">
+        <nav class="month-nav" th:aria-label="#{tx.month}">
+            <a class="icon-btn" th:href="@{/budget(month=${month.minusMonths(1)})}"
+               th:aria-label="#{tx.month.prev}" th:title="#{tx.month.prev}">‹</a>
+            <strong class="month-label" th:text="${#temporals.format(month, 'MMMM yyyy', #locale)}">November 2026</strong>
+            <a class="icon-btn" th:href="@{/budget(month=${month.plusMonths(1)})}"
+               th:aria-label="#{tx.month.next}" th:title="#{tx.month.next}">›</a>
+        </nav>
+        <a class="link-small" th:href="@{/transactions(month=${month})}" th:text="#{dashboard.seeEntries}">See entries</a>
+    </div>
+
+    <div class="grid totals three">
+        <div class="card kpi small">
+            <div class="label" th:text="#{kpi.income}">Income</div>
+            <div class="value amount income" th:text="${@fmt.baht(s.income)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{budget.fixedCost}">Fixed cost</div>
+            <div class="value amount expense" th:text="${@fmt.baht(s.fixedCost)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{budget.base}">Income after fixed cost</div>
+            <div class="value amount primary" th:text="${@fmt.baht(s.base())}">฿0</div>
+        </div>
+    </div>
+    <p class="muted small explain" th:text="#{budget.explain}">Both budgets are worked out from income after fixed cost.</p>
+
+    <div class="grid two-even">
+        <div class="card" th:each="kb : ${ {budget.actual, budget.goal} }">
+            <div class="card-head">
+                <div>
+                    <h2 th:text="#{${'budget.kind.' + kb.kind}}">Actual budget</h2>
+                    <div class="muted small" th:text="#{${'budget.kind.' + kb.kind + '.desc'}}">desc</div>
+                </div>
+                <a class="btn secondary small-btn" th:href="@{/budget/edit(month=${month},kind=${kb.kind})}"
+                   th:text="#{budget.edit}">Edit</a>
+            </div>
+            <p class="muted small" th:if="${#lists.isEmpty(kb.withBudget())}" th:text="#{budget.noneSet}">None set.</p>
+            <th:block th:replace="~{fragments/budget :: bars(${kb.withBudget()})}"/>
+            <div class="budget-foot" th:unless="${#lists.isEmpty(kb.withBudget())}">
+                <span th:text="#{budget.totalSpent(${@fmt.baht(kb.totalSpent())}, ${@fmt.baht(kb.totalBudget())})}">Spent ฿0 of ฿0</span>
+                <span th:if="${kb.totalPercent().signum() > 0}"
+                      th:classappend="${kb.overHundredPercent} ? 'over-text'"
+                      th:text="#{budget.totalPercent(${@fmt.percent(kb.totalPercent())})}">Adds up to 100%</span>
+            </div>
+            <ul class="list unbudgeted" th:unless="${#lists.isEmpty(kb.unbudgeted())}">
+                <li th:each="g : ${kb.unbudgeted()}">
+                    <span class="dot" th:classappend="${'g-' + g.group}"></span>
+                    <div class="grow">
+                        <div class="title" th:text="#{${'group.' + g.group}}">Necessary</div>
+                        <div class="sub" th:text="#{budget.noBudgetForGroup}">No budget set</div>
+                    </div>
+                    <span class="amount" th:text="${@fmt.baht(g.spent)}">฿0</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{budget.overTitle}">Entries that went over budget</h2></div>
+        <p class="muted small" th:if="${#lists.isEmpty(over)}" th:text="#{budget.overNone}">Nothing over budget.</p>
+        <p class="muted small" th:unless="${#lists.isEmpty(over)}" th:text="#{budget.overExplain}">explain</p>
+        <ul class="tx-list" th:unless="${#lists.isEmpty(over)}">
+            <li th:each="t : ${over}">
+                <a class="tx-row over" th:href="@{/transactions/{id}/edit(id=${t.id})}">
+                    <span class="dot" th:classappend="${@fmt.dot(t)}"></span>
+                    <div class="grow">
+                        <div class="title" th:text="${t.description ?: t.category.name(#locale)}">Shoes</div>
+                        <div class="sub">
+                            <span th:text="${#temporals.format(t.date, 'd MMM', #locale)}">3 Nov</span> ·
+                            <span th:text="#{${'group.' + t.category.budgetGroup}}">Shopping</span>
+                        </div>
+                    </div>
+                    <span class="amount expense" th:text="${@fmt.signed(t)}">−฿0</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</section>
+</body>
+</html>

@@ -18,7 +18,7 @@ public class PageController {
         return "settings";
     }
 
-    @GetMapping({"/budget", "/investments", "/tax", "/goals", "/reports"})
+    @GetMapping({"/investments", "/tax", "/goals", "/reports"})
     public String placeholder(Model model, jakarta.servlet.http.HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         NavItem item = NavItem.ALL.stream().filter(n -> n.path().equals(path)).findFirst().orElseThrow();

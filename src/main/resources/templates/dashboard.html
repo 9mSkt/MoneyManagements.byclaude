@@ -3,10 +3,20 @@
       th:replace="~{layout/base :: layout(#{dashboard.title}, ~{::content}, ~{::scripts})}">
 <body>
 <section th:fragment="content" class="stack">
-    <div class="notice">
+    <div class="page-tools">
+        <nav class="month-nav" th:aria-label="#{tx.month}">
+            <a class="icon-btn" th:href="@{/(month=${month.minusMonths(1)})}"
+               th:aria-label="#{tx.month.prev}" th:title="#{tx.month.prev}">‹</a>
+            <strong class="month-label" th:text="${#temporals.format(month, 'MMMM yyyy', #locale)}">November 2026</strong>
+            <a class="icon-btn" th:href="@{/(month=${month.plusMonths(1)})}"
+               th:aria-label="#{tx.month.next}" th:title="#{tx.month.next}">›</a>
+        </nav>
+        <a class="link-small" th:href="@{/transactions(month=${month})}" th:text="#{dashboard.seeEntries}">See entries</a>
+    </div>
+
+    <div class="notice" th:if="${summary.empty}">
         <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#info}"/></svg>
-        <span><span class="badge sample" th:text="#{dashboard.sample}">Sample data</span>
-            <span th:text="#{dashboard.sampleNote}">Mockup</span></span>
+        <span th:text="#{dashboard.empty}">No entries for this month yet.</span>
     </div>
 
     <div class="grid kpis">
@@ -15,14 +25,50 @@
             <div class="label" th:text="#{${'kpi.' + k.key}}">Income</div>
             <div class="value amount" th:classappend="${k.kind}"
                  th:text="${k.percent} ? ${#numbers.formatDecimal(k.value, 1, 'COMMA', 1, 'POINT')} + '%'
-                                        : '฿' + ${#numbers.formatDecimal(k.value, 1, 'COMMA', 2, 'POINT')}">฿0.00</div>
+                                        : ${@fmt.baht(k.value)}">฿0.00</div>
+            <div class="kpi-help" th:text="#{${'kpi.' + k.key + '.help'}}">help</div>
         </div>
     </div>
 
     <div class="grid two">
         <div class="card">
+            <div class="card-head">
+                <h2 th:text="#{dashboard.budget}">Budget</h2>
+                <a class="link-small" th:href="@{/budget(month=${month})}" th:text="#{dashboard.openBudget}">Budget</a>
+            </div>
+            <p class="muted small" th:if="${#lists.isEmpty(budget.withBudget())}" th:text="#{budget.noneSet}">No budget set.</p>
+            <th:block th:replace="~{fragments/budget :: bars(${budget.withBudget()})}"/>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2 th:text="#{dashboard.upcoming}">Upcoming</h2>
+                <a class="link-small" th:href="@{/fixed-costs}" th:text="#{dashboard.openFixed}">Fixed costs</a>
+            </div>
+            <p class="muted small" th:if="${#lists.isEmpty(upcoming)}" th:text="#{dashboard.upcomingNone}">Nothing due.</p>
+            <ul class="list">
+                <li th:each="u : ${upcoming}">
+                    <span class="dot" th:classappend="${u.installment} ? 'g-INVESTMENT' : 'g-FIXED'"></span>
+                    <div class="grow">
+                        <div class="title">
+                            <span th:text="${u.name}">Car</span>
+                            <span class="chip" th:if="${u.detail != null}" th:text="${u.detail}">3/10</span>
+                        </div>
+                        <div class="sub">
+                            <span th:text="${u.installment} ? #{upcoming.installment} : #{upcoming.fixed}">Installment</span> ·
+                            <span th:text="${#temporals.format(u.due, 'EEE d MMM', #locale)}">1 Dec</span>
+                        </div>
+                    </div>
+                    <span class="amount expense" th:text="${@fmt.baht(u.amount)}">฿0</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="grid two" th:attr="data-charts=@{/api/dashboard(month=${month})}" id="dash-charts">
+        <div class="card">
             <div class="card-head"><h2 th:text="#{dashboard.trend}">Trend</h2></div>
-            <div id="chart-trend" class="chart" th:data-src="@{/api/dashboard/sample}"></div>
+            <div id="chart-trend" class="chart"></div>
         </div>
         <div class="card">
             <div class="card-head"><h2 th:text="#{dashboard.byGroup}">By group</h2></div>
@@ -32,40 +78,13 @@
 
     <div class="grid two">
         <div class="card">
-            <div class="card-head"><h2 th:text="#{dashboard.budget}">Budget</h2></div>
-            <div class="budget-row" th:each="b : ${budgetBars}">
-                <div class="budget-meta">
-                    <span th:text="#{${'group.' + b.group}}">Eat</span>
-                    <span class="amount">
-                        <span th:text="'฿' + ${#numbers.formatDecimal(b.spent, 1, 'COMMA', 2, 'POINT')}">฿0</span>
-                        <span class="muted" th:text="#{dashboard.of}">of</span>
-                        <span class="muted" th:text="'฿' + ${#numbers.formatDecimal(b.budget, 1, 'COMMA', 2, 'POINT')}">฿0</span>
-                        · <span class="pct" th:classappend="${b.level()}"
-                                th:text="${#numbers.formatDecimal(b.percent, 1, 'COMMA', 0, 'POINT')} + '%'">0%</span>
-                    </span>
-                </div>
-                <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-                     th:aria-valuenow="${b.percent}" th:aria-label="#{${'group.' + b.group}}">
-                    <div class="fill" th:classappend="${b.level()}" th:style="'width:' + ${b.width()} + '%'"></div>
-                </div>
-            </div>
+            <div class="card-head"><h2 th:text="#{dashboard.flow}">Money flow</h2></div>
+            <div id="chart-flow" class="chart tall"></div>
         </div>
-
         <div class="card">
-            <div class="card-head"><h2 th:text="#{dashboard.upcoming}">Upcoming</h2></div>
-            <ul class="list">
-                <li th:each="u : ${upcoming}">
-                    <span class="dot" th:style="${u.labelKey == 'upcoming.installment'} ? 'background:var(--investment)' : 'background:var(--expense)'"></span>
-                    <div class="grow">
-                        <div class="title" th:text="${u.detail}">Item</div>
-                        <div class="sub">
-                            <span th:text="#{${u.labelKey}}">Installment</span> ·
-                            <span th:text="${#temporals.format(u.due, 'd MMM yyyy', #locale)}">1 Dec</span>
-                        </div>
-                    </div>
-                    <span class="amount expense" th:text="'฿' + ${#numbers.formatDecimal(u.amount, 1, 'COMMA', 2, 'POINT')}">฿0</span>
-                </li>
-            </ul>
+            <div class="card-head"><h2 th:text="#{dashboard.daily}">Daily spending</h2></div>
+            <p class="muted small" th:text="#{dashboard.dailyNote}">Without fixed costs.</p>
+            <div id="chart-daily" class="chart calendar"></div>
         </div>
     </div>
 </section>

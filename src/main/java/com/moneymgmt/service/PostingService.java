@@ -178,6 +178,56 @@ public class PostingService {
         return new MonthStatus(month, itemRows, planRows);
     }
 
+    /** A fixed cost or installment payment still to come. {@code detail} is "3/10" for installments. */
+    public record Upcoming(boolean installment, String name, String detail, LocalDate due, java.math.BigDecimal amount) {
+    }
+
+    /**
+     * Fixed costs and installment payments due from today up to {@code days} ahead, soonest first:
+     * this month's items not posted yet, then next month's.
+     */
+    @Transactional(readOnly = true)
+    public List<Upcoming> upcoming(LocalDate today, int days) {
+        LocalDate until = today.plusDays(days);
+        YearMonth month = YearMonth.from(today);
+        MonthStatus now = status(month);
+        List<Upcoming> out = new ArrayList<>();
+        for (ItemStatus s : now.items()) {
+            if (s.item().getCategory().getType() != TxType.EXPENSE) {
+                continue;
+            }
+            LocalDate due = s.posted() == null && !s.dueDate().isBefore(today) ? s.dueDate()
+                    : AppTime.dayIn(month.plusMonths(1), s.item().getDayOfMonth());
+            if (!due.isAfter(until)) {
+                out.add(new Upcoming(false, s.item().getName(), null, due, s.item().getAmount()));
+            }
+        }
+        for (Installment plan : plans.findAllForList()) {
+            if (plan.isFinished() || plan.getCategory() == null) {
+                continue;
+            }
+            // The next payment is posted on the 1st of the month after the last one posted.
+            LocalDate last = plan.getLastPostedMonth();
+            LocalDate due;
+            if (last != null) {
+                due = last.plusMonths(1);
+            } else if (plan.getStartMonth().isAfter(month.atDay(1))) {
+                due = plan.getStartMonth();
+            } else {
+                due = month.plusMonths(1).atDay(1);
+            }
+            if (due.isBefore(today)) {
+                due = month.plusMonths(1).atDay(1);
+            }
+            if (!due.isAfter(until)) {
+                out.add(new Upcoming(true, plan.getItem(), (plan.getPaidCount() + 1) + "/" + plan.getMonths(), due,
+                        plan.getMonthlyAmount()));
+            }
+        }
+        out.sort(java.util.Comparator.comparing(Upcoming::due).thenComparing(Upcoming::name));
+        return out;
+    }
+
     // ---------------------------------------------------------------------------------------------
 
     private static boolean postedFrom(LocalDate lastPosted, LocalDate first) {

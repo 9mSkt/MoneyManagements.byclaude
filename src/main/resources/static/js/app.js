@@ -130,6 +130,48 @@
     document.querySelectorAll('[data-installment-form]').forEach(updateInstallment);
   });
 
+  // ---------- Budget form: % / ฿ / none per group, with the baht it works out to ----------
+  var bahtFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function updateBudgetRow(row, base) {
+    var mode = row.querySelector('[data-mode]:checked');
+    var input = row.querySelector('input.input');
+    var preview = row.querySelector('[data-preview]');
+    if (!mode || !input) { return; }
+    input.disabled = mode.value === 'NONE';
+    input.placeholder = mode.value === 'PERCENT' ? '%' : (mode.value === 'AMOUNT' ? '฿' : '');
+    if (!preview) { return; }
+    var v = num(input);
+    if (mode.value === 'PERCENT' && input.value.trim() !== '') {
+      preview.textContent = '= ฿' + bahtFmt.format(base * v / 100);
+    } else if (mode.value === 'AMOUNT' && input.value.trim() !== '' && base > 0) {
+      preview.textContent = '= ' + (v / base * 100).toFixed(1) + '%';
+    } else {
+      preview.textContent = '';
+    }
+  }
+  function budgetForm(el) {
+    var form = el.closest && el.closest('[data-budget-form]');
+    return form ? { form: form, base: parseFloat(form.getAttribute('data-base')) || 0 } : null;
+  }
+  ['input', 'change'].forEach(function (type) {
+    document.addEventListener(type, function (e) {
+      var b = budgetForm(e.target);
+      var row = b && e.target.closest('.budget-edit-row');
+      if (row) {
+        updateBudgetRow(row, b.base);
+        if (e.target.matches('[data-mode]') && e.target.value !== 'NONE') {
+          row.querySelector('input.input').focus();
+        }
+      }
+    });
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-budget-form]').forEach(function (form) {
+      var base = parseFloat(form.getAttribute('data-base')) || 0;
+      form.querySelectorAll('.budget-edit-row').forEach(function (row) { updateBudgetRow(row, base); });
+    });
+  });
+
   // HTMX: send the CSRF token with every request.
   document.addEventListener('htmx:configRequest', function (e) {
     var token = document.querySelector('meta[name="_csrf"]');

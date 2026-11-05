@@ -49,11 +49,12 @@ class PagesTest extends AbstractWebTest {
     }
 
     @Test
-    void sampleChartDataIsJson() throws Exception {
-        mvc.perform(get("/api/dashboard/sample"))
+    void chartDataIsJson() throws Exception {
+        mvc.perform(get("/api/dashboard").param("month", "2026-11"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.months.length()").value(12))
-                .andExpect(jsonPath("$.byGroup[0].name").exists());
+                .andExpect(jsonPath("$.trend.months.length()").value(12))
+                .andExpect(jsonPath("$.daily.days.length()").value(30))
+                .andExpect(jsonPath("$.sankey.nodes").isArray());
     }
 
     @Test

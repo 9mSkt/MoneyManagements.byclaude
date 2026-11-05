@@ -7,11 +7,33 @@ window.MoneyCharts = (function () {
   }
 
   function palette() {
+    var groups = {};
+    ['FIXED', 'GAS', 'NECESSARY', 'SHOPPING', 'EAT', 'SAVING', 'INVESTMENT'].forEach(function (g) {
+      groups[g] = css('--g-' + g.toLowerCase());
+    });
     return {
       text: css('--text'), muted: css('--text-muted'), border: css('--border'), surface: css('--surface'),
+      surface2: css('--surface-2'),
       primary: css('--primary'), income: css('--income'), expense: css('--expense'),
-      investment: css('--investment'), warning: css('--warning'), over: css('--over')
+      investment: css('--investment'), warning: css('--warning'), over: css('--over'),
+      /** Colour of a budget group (one fixed colour per group, defined in app.css). */
+      group: function (key) { return groups[key] || css('--text-muted'); }
     };
+  }
+
+  /** Short weekday names, Sunday first (the order ECharts expects), in the page language. */
+  function weekdays() {
+    var f = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    var out = [];
+    for (var i = 0; i < 7; i++) { out.push(f.format(new Date(2026, 1, 1 + i))); }  // 1 Feb 2026 is a Sunday
+    return out;
+  }
+
+  /** Shows a quiet "no data" message instead of an empty chart. */
+  function empty(el, text) {
+    if (!el) { return; }
+    el.classList.add('chart-empty');
+    el.textContent = text;
   }
 
   var lang = document.documentElement.lang || 'en';
@@ -46,5 +68,5 @@ window.MoneyCharts = (function () {
     resizeTimer = setTimeout(function () { charts.forEach(function (c) { c.chart.resize(); }); }, 120);
   });
 
-  return { register: register, baht: baht, short: moneyShort, monthName: monthName };
+  return { register: register, baht: baht, short: moneyShort, monthName: monthName, weekdays: weekdays, empty: empty };
 })();

@@ -30,14 +30,17 @@ public class TransactionController {
     private final CategoryRepository categories;
     private final PostingService posting;
     private final IncentiveService incentives;
+    private final com.moneymgmt.service.BudgetService budgets;
 
     public TransactionController(TransactionService service, TransactionRepository transactions,
-                                 CategoryRepository categories, PostingService posting, IncentiveService incentives) {
+                                 CategoryRepository categories, PostingService posting, IncentiveService incentives,
+                                 com.moneymgmt.service.BudgetService budgets) {
         this.service = service;
         this.transactions = transactions;
         this.categories = categories;
         this.posting = posting;
         this.incentives = incentives;
+        this.budgets = budgets;
     }
 
     /** List with filters. An HTMX request (filter change) gets only the results part of the page. */
@@ -61,6 +64,8 @@ public class TransactionController {
         model.addAttribute("groups", BudgetGroup.values());
         model.addAttribute("types", TxType.values());
         model.addAttribute("filterQuery", filterQuery(filter));
+        // Entries that pushed a group over this month's actual budget are shown in red.
+        model.addAttribute("overIds", ym == null ? java.util.Set.of() : budgets.overBudgetIds(ym));
         if (ym != null) {
             model.addAttribute("incentive", incentives.forMonth(ym));
         }

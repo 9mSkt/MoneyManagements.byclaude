@@ -104,6 +104,11 @@
 
         <div class="card">
             <p class="muted" th:if="${result.truncated}" th:text="#{tx.truncated(${T(com.moneymgmt.service.TransactionService).MAX_ROWS})}">Showing first 500.</p>
+            <p class="over-note" th:unless="${#sets.isEmpty(overIds)}">
+                <span class="over-swatch" aria-hidden="true"></span>
+                <span th:text="#{tx.overNote}">Red rows pushed a group over budget.</span>
+                <a th:href="@{/budget(month=${month})}" th:text="#{tx.overLink}">See budget</a>
+            </p>
             <div class="empty" th:if="${#lists.isEmpty(result.rows)}">
                 <p class="muted" th:text="${filter.filtered} ? #{tx.empty.filtered} : #{tx.empty}">Nothing yet.</p>
                 <button type="button" class="btn" data-open="quick-add" th:text="#{tx.new}">Add</button>
@@ -113,7 +118,8 @@
                     <li class="tx-date" th:if="${s.first or result.rows[s.index - 1].date != t.date}"
                         th:text="${#temporals.format(t.date, 'EEE d MMM yyyy', #locale)}">Mon 2 Nov 2026</li>
                     <li>
-                        <a class="tx-row" th:href="@{/transactions/{id}/edit(id=${t.id})}">
+                        <a class="tx-row" th:classappend="${overIds.contains(t.id)} ? 'over'" th:href="@{/transactions/{id}/edit(id=${t.id})}"
+                           th:title="${overIds.contains(t.id)} ? #{tx.overBudget}">
                             <span class="dot" th:classappend="${@fmt.dot(t)}"></span>
                             <div class="grow">
                                 <div class="title" th:text="${t.description ?: t.category.name(#locale)}">Lunch</div>

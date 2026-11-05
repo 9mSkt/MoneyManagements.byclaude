@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Budget progress bars. list = List<BudgetService.GroupBudget> that have a budget.
+     Limits: teal below 80 %, amber 80–100 %, red above 100 %. Saving / investing are targets (green when reached). -->
+<th:block th:fragment="bars(list)">
+    <div class="budget-row" th:each="b : ${list}">
+        <div class="budget-meta">
+            <span class="budget-name">
+                <span class="dot" th:classappend="${'g-' + b.group}"></span>
+                <span th:text="#{${'group.' + b.group}}">Eat</span>
+                <span class="chip" th:text="${b.byAmount} ? #{budget.chip.amount} : ${@fmt.percent(b.percent)}">40%</span>
+            </span>
+            <span class="amount">
+                <span th:text="${@fmt.baht(b.spent)}">฿0</span>
+                <span class="muted" th:text="#{dashboard.of}">of</span>
+                <span class="muted" th:text="${@fmt.baht(b.budget)}">฿0</span>
+                · <span class="pct" th:classappend="${b.level()}"
+                        th:text="${b.zeroBudgetSpent} ? '—'
+                                 : ${#numbers.formatDecimal(b.usedPercent(), 1, 'COMMA', 0, 'POINT')} + '%'">0%</span>
+            </span>
+        </div>
+        <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+             th:aria-valuenow="${b.width()}" th:aria-label="#{${'group.' + b.group}}">
+            <div class="fill" th:classappend="${b.level()}" th:style="'width:' + ${b.width()} + '%'"></div>
+        </div>
+        <div class="budget-left">
+            <th:block th:if="${b.target}">
+                <span th:if="${b.left().signum() > 0}" th:text="#{budget.toGo(${@fmt.baht(b.left())})}">฿0 to go</span>
+                <span th:unless="${b.left().signum() > 0}" class="done-text" th:text="#{budget.reached}">Reached</span>
+            </th:block>
+            <th:block th:unless="${b.target}">
+                <span th:if="${b.left().signum() >= 0}" th:text="#{budget.left(${@fmt.baht(b.left())})}">฿0 left</span>
+                <span th:if="${b.left().signum() < 0}" class="over-text"
+                      th:text="#{budget.overBy(${@fmt.baht(b.left().negate())})}">Over by ฿0</span>
+            </th:block>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

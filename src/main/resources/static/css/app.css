@@ -15,6 +15,14 @@
   --warning: #D4A24C;
   --over: #C9544B;
   --over-soft: rgba(201, 84, 75, 0.10);
+  /* One colour per budget group (charts, dots). Proposed in Phase 3; distinct from the meaning colours above. */
+  --g-fixed: #8A94A6;
+  --g-gas: #9A9F55;
+  --g-necessary: #5A9EC4;
+  --g-shopping: #A77DB9;
+  --g-eat: #DE955E;
+  --g-saving: #4E9F76;
+  --g-investment: #6F7FD6;
   --shadow: 0 1px 2px rgba(42, 47, 54, 0.05), 0 4px 16px rgba(42, 47, 54, 0.06);
   --radius: 12px;
   --sidebar-w: 248px;
@@ -38,6 +46,13 @@
   --warning: #E2B865;
   --over: #EF7D73;
   --over-soft: rgba(239, 125, 115, 0.12);
+  --g-fixed: #98A2B3;
+  --g-gas: #B7BC72;
+  --g-necessary: #7DB8DA;
+  --g-shopping: #C39BD4;
+  --g-eat: #EBAD7C;
+  --g-saving: #6CC096;
+  --g-investment: #8E9BE6;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.2);
   color-scheme: dark;
 }
@@ -299,16 +314,6 @@ table.data td.num, table.data th.num { text-align: right; }
 .tx-row .amount { font-weight: 600; }
 .empty { text-align: center; padding: 24px 8px; }
 
-/* Group colour dots (Phase 3 proposes a distinct colour per group) */
-.dot.g-INCOME { background: var(--income); }
-.dot.g-FIXED { background: var(--text-muted); }
-.dot.g-GAS { background: var(--warning); }
-.dot.g-NECESSARY { background: var(--primary); }
-.dot.g-SHOPPING { background: var(--investment); }
-.dot.g-EAT { background: var(--expense); }
-.dot.g-SAVING { background: var(--income); }
-.dot.g-INVESTMENT, .dot.g-TRANSFER { background: var(--investment); }
-.dot.g-none { background: transparent; border: 2px solid var(--border); }
 
 /* Forms */
 .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -367,3 +372,62 @@ dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
 .hint { color: var(--text-muted); font-size: 0.8rem; }
 .period-input { max-width: 160px; font-variant-numeric: tabular-nums; }
 .period-input[readonly] { background: var(--surface-2); }
+
+/* ---------- Phase 3: dashboard and budget ---------- */
+.dot.g-INCOME { background: var(--income); }
+.dot.g-FIXED { background: var(--g-fixed); }
+.dot.g-GAS { background: var(--g-gas); }
+.dot.g-NECESSARY { background: var(--g-necessary); }
+.dot.g-SHOPPING { background: var(--g-shopping); }
+.dot.g-EAT { background: var(--g-eat); }
+.dot.g-SAVING { background: var(--g-saving); }
+.dot.g-INVESTMENT, .dot.g-TRANSFER { background: var(--g-investment); }
+.dot.g-none { background: transparent; border: 2px solid var(--border); }
+
+.kpi-help { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.chart.tall { height: 440px; }
+.chart.calendar { height: 300px; }
+.chart-empty { display: grid; place-items: center; color: var(--text-muted); font-size: 0.9rem; height: 200px; }
+.totals.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 560px) { .totals.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } .totals.three > :last-child { grid-column: 1 / -1; } }
+.explain { margin: -4px 0 0; }
+
+/* Budget bars */
+.budget-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+.budget-left { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+.over-text { color: var(--over); font-weight: 600; }
+.done-text { color: var(--income); font-weight: 600; }
+.fill.goal { background: var(--income); opacity: 0.75; }
+.fill.done { background: var(--income); }
+.pct.done { color: var(--income); font-weight: 600; }
+.budget-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); }
+.unbudgeted { margin-top: 10px; }
+
+/* Entries that pushed a group over budget */
+.tx-row.over { background: var(--over-soft); box-shadow: inset 3px 0 0 var(--over); }
+.tx-row.over:hover { background: color-mix(in srgb, var(--over) 16%, transparent); }
+.over-note { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted); margin: 0 0 12px; }
+.over-swatch { width: 14px; height: 14px; border-radius: 4px; background: var(--over-soft); box-shadow: inset 3px 0 0 var(--over); }
+
+/* Budget edit form */
+.budget-edit-row { display: grid; grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1.4fr); gap: 10px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.budget-edit-name { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.budget-edit-value { display: flex; align-items: center; gap: 10px; }
+.budget-edit-value .input { max-width: 130px; height: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-edit-value .input:disabled { opacity: 0.45; }
+.budget-preview { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.budget-edit-row .field-error { grid-column: 1 / -1; }
+.mode-switch label { position: relative; cursor: pointer; padding: 7px 12px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); background: var(--surface); }
+.mode-switch label + label { border-left: 1px solid var(--border); }
+.mode-switch input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.mode-switch label:has(input:checked) { background: var(--primary); color: var(--on-primary); }
+.mode-switch label:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
+@media (max-width: 560px) {
+  .budget-edit-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .budget-edit-value { grid-column: 1 / -1; }
+  .budget-edit-value .input { max-width: none; flex: 1; }
+}
+.scope { border: 0; margin: 16px 0 8px; padding: 0; }
+.scope legend { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; padding: 0; }
+.scope .check { margin: 6px 0; }
+.card-head .link-small { white-space: nowrap; }

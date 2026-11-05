@@ -38,4 +38,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     List<Transaction> findByCategoryCodeAndDateBetweenOrderByDateAscIdAsc(String code, LocalDate from, LocalDate to);
 
     long countByInstallment(Installment installment);
+
+    /** Totals grouped by month, category and type (dashboard, budget, reports). */
+    @Query("select new com.moneymgmt.repo.CategoryMonthTotal(extract(year from t.date), extract(month from t.date), "
+            + "t.category.id, t.type, sum(t.amount)) from Transaction t where t.date between :from and :to "
+            + "group by extract(year from t.date), extract(month from t.date), t.category.id, t.type")
+    List<CategoryMonthTotal> totalsByMonthAndCategory(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** Day-by-day spending without fixed costs, for the calendar heatmap. Rows: [LocalDate, BigDecimal]. */
+    @Query("select t.date, sum(t.amount) from Transaction t join t.category c where t.type = "
+            + "com.moneymgmt.domain.TxType.EXPENSE and (c.budgetGroup is null or c.budgetGroup <> "
+            + "com.moneymgmt.domain.BudgetGroup.FIXED) and t.date between :from and :to group by t.date")
+    List<Object[]> dailySpending(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** All entries of a month in the order they happened (for "which entry pushed a group over budget"). */
+    @EntityGraph(attributePaths = {"category"})
+    List<Transaction> findByDateBetweenOrderByDateAscIdAsc(LocalDate from, LocalDate to);
 }

@@ -1,9 +1,21 @@
 package com.moneymgmt.web;
 
 import com.moneymgmt.domain.BudgetGroup;
+import com.moneymgmt.domain.Category;
+import com.moneymgmt.domain.TxType;
+import com.moneymgmt.service.BudgetService;
+import com.moneymgmt.service.PostingService;
+import com.moneymgmt.service.StatsService;
+import com.moneymgmt.service.StatsService.CatTotal;
+import com.moneymgmt.service.StatsService.MonthSummary;
+import com.moneymgmt.util.AppTime;
 import com.moneymgmt.util.Money;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -12,101 +24,189 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-/**
- * Phase 1 look-and-feel mockup. Every number here is MADE-UP sample data, shown with a "sample data" badge.
- * Phase 3 replaces it with real totals computed from transactions.
- */
+/** The month at a glance. Numbers on the page are rendered by the server; charts load a small JSON call. */
 @Controller
 public class DashboardController {
+
+    /** How far ahead "upcoming installments and bills" looks. */
+    static final int UPCOMING_DAYS = 35;
 
     public record Kpi(String key, BigDecimal value, String kind, boolean percent) {
     }
 
-    public record BudgetBar(BudgetGroup group, BigDecimal budget, BigDecimal spent, BigDecimal percent) {
-        /** ok below 80 %, warn from 80 % to 100 %, over above 100 %. */
-        public String level() {
-            if (percent.compareTo(BigDecimal.valueOf(100)) > 0) {
-                return "over";
-            }
-            return percent.compareTo(BigDecimal.valueOf(80)) >= 0 ? "warn" : "ok";
-        }
-
-        /** Bar width, capped at 100. */
-        public BigDecimal width() {
-            return percent.min(BigDecimal.valueOf(100));
-        }
-    }
-
-    public record Upcoming(String labelKey, String detail, LocalDate due, BigDecimal amount) {
-    }
-
+    private final StatsService stats;
+    private final BudgetService budgets;
+    private final PostingService posting;
     private final MessageSource messages;
 
-    public DashboardController(MessageSource messages) {
+    public DashboardController(StatsService stats, BudgetService budgets, PostingService posting,
+                               MessageSource messages) {
+        this.stats = stats;
+        this.budgets = budgets;
+        this.posting = posting;
         this.messages = messages;
     }
 
     @GetMapping({"/", "/dashboard"})
-    public String dashboard(Model model) {
-        BigDecimal income = Money.of("52000");
-        BigDecimal outcome = Money.of("38450");
-        BigDecimal remaining = income.subtract(outcome);
+    public String dashboard(@RequestParam(required = false) String month, Model model) {
+        posting.autoPostIfNeeded();
+        YearMonth ym = TransactionController.orThisMonth(month);
+        var budget = budgets.forMonth(ym);
+        MonthSummary s = budget.summary();
+        model.addAttribute("month", ym);
+        model.addAttribute("summary", s);
         model.addAttribute("kpis", List.of(
-                new Kpi("income", income, "income", false),
-                new Kpi("outcome", outcome, "expense", false),
-                new Kpi("remaining", remaining, "primary", false),
-                new Kpi("savingRate", Money.percent(remaining, income), "investment", true)));
-        model.addAttribute("budgetBars", List.of(
-                bar(BudgetGroup.EAT, "10000", "8700"),
-                bar(BudgetGroup.SHOPPING, "10000", "10850"),
-                bar(BudgetGroup.GAS, "5000", "2900")));
-        model.addAttribute("upcoming", List.of(
-                new Upcoming("upcoming.installment", "Phone 3/10", LocalDate.of(2026, 12, 1), Money.of("1250")),
-                new Upcoming("upcoming.fixed", "Car", LocalDate.of(2026, 12, 5), Money.of("9000")),
-                new Upcoming("upcoming.fixed", "Electricity", LocalDate.of(2026, 12, 10), Money.of("1400")),
-                new Upcoming("upcoming.installment", "Laptop 7/12", LocalDate.of(2026, 12, 15), Money.of("2100"))));
-        model.addAttribute("monthLabel", LocalDate.of(2026, 11, 1));
+                new Kpi("income", s.income(), "income", false),
+                new Kpi("outcome", s.expense(), "expense", false),
+                new Kpi("remaining", s.remaining(), "primary", false),
+                new Kpi("savingRate", s.savingRate(), "investment", true)));
+        model.addAttribute("budget", budget.actual());
+        model.addAttribute("upcoming", posting.upcoming(AppTime.today(), UPCOMING_DAYS));
         return "dashboard";
     }
 
-    /** Chart data for the mockup, fetched as a small JSON call (the same shape Phase 3 will serve). */
-    @GetMapping("/api/dashboard/sample")
+    /** Chart data for one month: 12-month trend, spending by group/category, money flow, daily spending. */
+    @GetMapping("/api/dashboard")
     @ResponseBody
-    public Map<String, Object> sampleCharts(Locale locale) {
+    public Map<String, Object> charts(@RequestParam(required = false) String month, Locale locale) {
+        YearMonth ym = TransactionController.orThisMonth(month);
+        YearMonth from = ym.minusMonths(11);
+        List<CatTotal> rows = stats.totals(from, ym);
+        List<CatTotal> thisMonth = rows.stream().filter(r -> r.month().equals(ym)).toList();
+        MonthSummary s = StatsService.summarize(thisMonth, ym, ym).get(0);
+
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("months", List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
-        data.put("year", 2026);
-        data.put("income", amounts(48000, 49500, 51000, 48200, 50400, 53000, 49800, 50100, 51500, 52500, 52000, 0));
-        data.put("outcome", amounts(36200, 41000, 37800, 35900, 39400, 44100, 38800, 37200, 40300, 39000, 38450, 0));
-        Map<String, Object> donut = new LinkedHashMap<>();
-        donut.put(group(BudgetGroup.FIXED, locale), Money.of("21000"));
-        donut.put(group(BudgetGroup.EAT, locale), Money.of("8700"));
-        donut.put(group(BudgetGroup.SHOPPING, locale), Money.of("10850"));
-        donut.put(group(BudgetGroup.GAS, locale), Money.of("2900"));
-        donut.put(group(BudgetGroup.NECESSARY, locale), Money.of("1500"));
-        data.put("byGroup", donut.entrySet().stream()
-                .map(e -> Map.of("name", e.getKey(), "value", e.getValue())).toList());
-        data.put("labels", Map.of(
-                "income", msg("kpi.income", locale),
-                "outcome", msg("kpi.outcome", locale),
-                "remaining", msg("kpi.remaining", locale)));
+        data.put("month", ym.toString());
+        data.put("labels", labels(locale));
+        data.put("trend", trend(rows, from, ym));
+        data.put("groups", groups(thisMonth, locale));
+        data.put("categories", categories(thisMonth, locale));
+        data.put("sankey", sankey(thisMonth, s, locale));
+        data.put("daily", daily(ym));
         return data;
     }
 
-    private static BudgetBar bar(BudgetGroup group, String budget, String spent) {
-        BigDecimal b = Money.of(budget);
-        BigDecimal s = Money.of(spent);
-        return new BudgetBar(group, b, s, Money.percent(s, b));
+    private Map<String, String> labels(Locale locale) {
+        Map<String, String> l = new LinkedHashMap<>();
+        for (String key : List.of("income", "outcome", "remaining", "transfer", "leftOver", "shortfall", "noData",
+                "spentOn")) {
+            l.put(key, msg("chart." + key, locale));
+        }
+        return l;
     }
 
-    private static List<BigDecimal> amounts(long... values) {
-        return java.util.Arrays.stream(values).mapToObj(Money::of).toList();
+    private Map<String, Object> trend(List<CatTotal> rows, YearMonth from, YearMonth to) {
+        List<Map<String, Integer>> months = new ArrayList<>();
+        List<BigDecimal> income = new ArrayList<>();
+        List<BigDecimal> outcome = new ArrayList<>();
+        List<BigDecimal> transfer = new ArrayList<>();
+        List<BigDecimal> remaining = new ArrayList<>();
+        for (MonthSummary m : StatsService.summarize(rows, from, to)) {
+            months.add(Map.of("y", m.month().getYear(), "m", m.month().getMonthValue()));
+            income.add(m.income());
+            outcome.add(m.expense());
+            transfer.add(m.transfer());
+            remaining.add(m.isEmpty() ? null : m.remaining());
+        }
+        Map<String, Object> t = new LinkedHashMap<>();
+        t.put("months", months);
+        t.put("income", income);
+        t.put("outcome", outcome);
+        t.put("transfer", transfer);
+        t.put("remaining", remaining);
+        return t;
     }
 
-    private String group(BudgetGroup g, Locale locale) {
-        return msg("group." + g.name(), locale);
+    /** Expenses per group (inner ring). Groups in their fixed order so colours never move. */
+    private List<Map<String, Object>> groups(List<CatTotal> rows, Locale locale) {
+        Map<BudgetGroup, BigDecimal> byGroup = new EnumMap<>(BudgetGroup.class);
+        rows.stream().filter(r -> r.type() == TxType.EXPENSE && r.category().getBudgetGroup() != null)
+                .forEach(r -> byGroup.merge(r.category().getBudgetGroup(), r.amount(), BigDecimal::add));
+        List<Map<String, Object>> out = new ArrayList<>();
+        byGroup.forEach((g, v) -> {
+            if (v.signum() > 0) {
+                out.add(Map.of("key", g.name(), "name", msg("group." + g.name(), locale), "value", v));
+            }
+        });
+        return out;
+    }
+
+    /** Expenses per category (outer ring), in group order then largest first. */
+    private List<Map<String, Object>> categories(List<CatTotal> rows, Locale locale) {
+        Map<Category, BigDecimal> byCat = new LinkedHashMap<>();
+        rows.stream().filter(r -> r.type() == TxType.EXPENSE && r.category().getBudgetGroup() != null)
+                .forEach(r -> byCat.merge(r.category(), r.amount(), BigDecimal::add));
+        return byCat.entrySet().stream().filter(e -> e.getValue().signum() > 0)
+                .sorted(Comparator.<Map.Entry<Category, BigDecimal>, Integer>comparing(
+                                e -> e.getKey().getBudgetGroup().ordinal())
+                        .thenComparing(Map.Entry::getValue, Comparator.reverseOrder()))
+                .map(e -> Map.<String, Object>of("key", e.getKey().getBudgetGroup().name(),
+                        "name", e.getKey().name(locale), "value", e.getValue()))
+                .toList();
+    }
+
+    /** Money flow: income sources → Income → fixed cost, each spending group, saving, investment, left over. */
+    private Map<String, Object> sankey(List<CatTotal> rows, MonthSummary s, Locale locale) {
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        List<Map<String, Object>> links = new ArrayList<>();
+        String incomeNode = msg("chart.income", locale);
+
+        Map<Category, BigDecimal> sources = new LinkedHashMap<>();
+        rows.stream().filter(r -> r.type() == TxType.INCOME)
+                .forEach(r -> sources.merge(r.category(), r.amount(), BigDecimal::add));
+        Map<BudgetGroup, BigDecimal> outflow = new EnumMap<>(BudgetGroup.class);
+        StatsService.byGroup(rows).forEach((g, v) -> {
+            if (v.signum() > 0) {
+                outflow.put(g, v);
+            }
+        });
+        if (sources.isEmpty() && outflow.isEmpty()) {
+            return Map.of("nodes", nodes, "links", links);
+        }
+
+        nodes.add(Map.of("name", incomeNode, "key", "INCOME"));
+        sources.entrySet().stream().filter(e -> e.getValue().signum() > 0)
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEach(e -> {
+                    String name = e.getKey().name(locale) + " ";  // trailing space keeps it apart from a group name
+                    nodes.add(Map.of("name", name, "key", "SOURCE"));
+                    links.add(Map.of("source", name, "target", incomeNode, "value", e.getValue()));
+                });
+        BigDecimal out = outflow.values().stream().reduce(Money.zero(), BigDecimal::add);
+        BigDecimal in = sources.values().stream().filter(v -> v.signum() > 0).reduce(Money.zero(), BigDecimal::add);
+        if (out.compareTo(in) > 0) {
+            String shortfall = msg("chart.shortfall", locale);
+            nodes.add(Map.of("name", shortfall, "key", "SHORTFALL"));
+            links.add(Map.of("source", shortfall, "target", incomeNode, "value", out.subtract(in)));
+        }
+        outflow.forEach((g, v) -> {
+            String name = msg("group." + g.name(), locale);
+            nodes.add(Map.of("name", name, "key", g.name()));
+            links.add(Map.of("source", incomeNode, "target", name, "value", v));
+        });
+        if (in.compareTo(out) > 0) {
+            String left = msg("chart.leftOver", locale);
+            nodes.add(Map.of("name", left, "key", "LEFT"));
+            links.add(Map.of("source", incomeNode, "target", left, "value", in.subtract(out)));
+        }
+        return Map.of("nodes", nodes, "links", links);
+    }
+
+    /** Every day of the month with its spending (0 when nothing), for the calendar heatmap. */
+    private Map<String, Object> daily(YearMonth ym) {
+        Map<LocalDate, BigDecimal> spent = stats.dailySpending(ym);
+        List<List<Object>> days = new ArrayList<>();
+        BigDecimal max = Money.zero();
+        for (int d = 1; d <= ym.lengthOfMonth(); d++) {
+            LocalDate day = ym.atDay(d);
+            BigDecimal v = spent.getOrDefault(day, Money.zero());
+            max = max.max(v);
+            days.add(List.of(day.toString(), v));
+        }
+        return Map.of("range", ym.toString(), "days", days, "max", max);
     }
 
     private String msg(String key, Locale locale) {

@@ -6,7 +6,7 @@ import java.util.List;
 public record NavItem(String key, String path, int phase, boolean mobileTab) {
 
     /** Phases finished so far; menu items from later phases show a "P3"-style badge. */
-    public static final int BUILT_PHASE = 2;
+    public static final int BUILT_PHASE = 3;
 
     public static final List<NavItem> ALL = List.of(
             new NavItem("dashboard", "/", 1, true),

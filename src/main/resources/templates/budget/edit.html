@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{${'budget.kind.' + kind}}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow" th:with="kindName=#{${'budget.kind.' + kind}}">
+    <div class="card">
+        <div class="card-head">
+            <div>
+                <h2 th:text="#{budget.editTitle(${kindName}, ${#temporals.format(month, 'MMMM yyyy', #locale)})}">Edit</h2>
+                <div class="muted small" th:text="#{${'budget.kind.' + kind + '.desc'}}">desc</div>
+            </div>
+            <a class="link-small" th:href="@{/budget(month=${month})}" th:text="#{budget.back}">Back</a>
+        </div>
+
+        <div class="info-list">
+            <span th:text="#{budget.baseThisMonth(${@fmt.baht(summary.base())})}">Income after fixed cost: ฿0</span>
+        </div>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/budget/edit}" method="post" data-budget-form th:attr="data-base=${summary.base()}">
+            <input type="hidden" name="month" th:value="${month}">
+            <input type="hidden" name="kind" th:value="${kind}">
+
+            <div class="budget-edit-row" th:each="r : ${rows}" th:classappend="${errors.containsKey(r.group.name())} ? 'has-error'">
+                <div class="budget-edit-name">
+                    <span class="dot" th:classappend="${'g-' + r.group}"></span>
+                    <label th:for="${'value-' + r.group}" th:text="#{${'group.' + r.group}}">Eat</label>
+                </div>
+                <div class="segmented mode-switch" role="radiogroup" th:aria-label="#{${'group.' + r.group}}">
+                    <label th:each="m : ${ {'PERCENT', 'AMOUNT', 'NONE'} }">
+                        <input type="radio" th:name="${'mode_' + r.group}" th:value="${m}" th:checked="${r.mode == m}" data-mode>
+                        <span th:text="#{${'budget.mode.' + m}}">%</span>
+                    </label>
+                </div>
+                <div class="budget-edit-value">
+                    <input class="input" th:id="${'value-' + r.group}" th:name="${'value_' + r.group}" th:value="${r.value}"
+                           inputmode="decimal" autocomplete="off" maxlength="20" th:disabled="${r.mode == 'NONE'}">
+                    <span class="budget-preview muted small" data-preview></span>
+                </div>
+                <div class="field-error" th:if="${errors.containsKey(r.group.name())}"
+                     th:text="#{${errors.get(r.group.name())}}">Error</div>
+            </div>
+
+            <fieldset class="scope">
+                <legend th:text="#{budget.scope}">Apply to</legend>
+                <label class="check">
+                    <input type="radio" name="scope" value="later" th:checked="${laterToo}">
+                    <span th:text="#{budget.scope.later}">This month and all later months</span>
+                </label>
+                <label class="check">
+                    <input type="radio" name="scope" value="month" th:checked="${!laterToo}">
+                    <span th:text="#{budget.scope.month}">This month only</span>
+                </label>
+            </fieldset>
+
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/budget(month=${month})}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+</body>
+</html>
