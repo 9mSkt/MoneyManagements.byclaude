@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Transaction fields, shared by the quick-add drawer and the add/edit page.
+     f = TxForm, errors = field → message key (may be null), p = id prefix so two copies on one page do not clash. -->
+<th:block th:fragment="fields(f, errors, p)" th:with="err=${errors ?: {:}}">
+    <div class="segmented type-switch" role="radiogroup" th:aria-label="#{tx.type}">
+        <label th:each="ty : ${ {'EXPENSE', 'INCOME', 'TRANSFER'} }">
+            <input type="radio" name="type" th:value="${ty}" th:checked="${f.type.name() == ty}" data-type-radio>
+            <span th:text="#{${'tx.type.' + ty}}">Expense</span>
+        </label>
+    </div>
+
+    <div class="field" th:classappend="${err.containsKey('amount')} ? 'has-error'">
+        <label th:for="${p + '-amount'}" th:text="#{tx.amount}">Amount</label>
+        <div class="money-input">
+            <span aria-hidden="true">฿</span>
+            <input class="input" th:id="${p + '-amount'}" name="amount" th:value="${f.amount}" inputmode="decimal"
+                   autocomplete="off" required maxlength="20" placeholder="0.00" data-autofocus>
+        </div>
+        <div class="field-error" th:if="${err.containsKey('amount')}" th:text="#{${err.get('amount')}}">Error</div>
+    </div>
+
+    <div class="field" th:classappend="${err.containsKey('categoryId')} ? 'has-error'">
+        <label th:id="${p + '-cat-label'}" th:text="#{tx.category}">Category</label>
+        <select th:each="ty : ${ {'EXPENSE', 'INCOME', 'TRANSFER'} }" class="input" name="categoryId"
+                th:id="${p + '-cat-' + ty}" th:attr="data-for-type=${ty},aria-labelledby=${p + '-cat-label'}"
+                th:disabled="${f.type.name() != ty}" th:hidden="${f.type.name() != ty}" required>
+            <optgroup th:each="g : ${catOptions.forType(T(com.moneymgmt.domain.TxType).valueOf(ty))}"
+                      th:label="${g.group == null} ? #{${'tx.type.' + ty}} : #{${'group.' + g.group}}">
+                <option th:each="c : ${g.categories}" th:value="${c.id}" th:text="${c.name(#locale)}"
+                        th:selected="${f.categoryId != null and f.categoryId == c.id}">Category</option>
+            </optgroup>
+        </select>
+        <div class="field-error" th:if="${err.containsKey('categoryId')}" th:text="#{${err.get('categoryId')}}">Error</div>
+    </div>
+
+    <div class="form-row">
+        <div class="field" th:classappend="${err.containsKey('date')} ? 'has-error'">
+            <label th:for="${p + '-date'}" th:text="#{tx.date}">Date</label>
+            <input class="input" type="date" th:id="${p + '-date'}" name="date" th:value="${f.date}" required>
+            <div class="field-error" th:if="${err.containsKey('date')}" th:text="#{${err.get('date')}}">Error</div>
+        </div>
+        <div class="field">
+            <label th:for="${p + '-desc'}" th:text="#{tx.description}">Description</label>
+            <input class="input" th:id="${p + '-desc'}" name="description" th:value="${f.description}" maxlength="200"
+                   autocomplete="off" th:placeholder="#{tx.description.hint}">
+        </div>
+    </div>
+
+    <details class="more-fields" th:open="${f.note != null or f.tags != null}">
+        <summary th:text="#{tx.more}">Note and tags</summary>
+        <div class="field">
+            <label th:for="${p + '-tags'}" th:text="#{tx.tags}">Tags</label>
+            <input class="input" th:id="${p + '-tags'}" name="tags" th:value="${f.tags}" maxlength="300"
+                   autocomplete="off" th:placeholder="#{tx.tags.hint}">
+        </div>
+        <div class="field">
+            <label th:for="${p + '-note'}" th:text="#{tx.note}">Note</label>
+            <textarea class="input" th:id="${p + '-note'}" name="note" rows="2" maxlength="1000" th:text="${f.note}"></textarea>
+        </div>
+    </details>
+</th:block>
+</body>
+</html>

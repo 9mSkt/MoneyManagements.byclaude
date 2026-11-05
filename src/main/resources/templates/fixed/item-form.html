@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${form.id == null} ? #{fixed.new} : #{fixed.edit}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.id == null} ? #{fixed.new} : #{fixed.edit}">New fixed cost</h2>
+            <a class="link-small" th:href="@{/fixed-costs}" th:text="#{fixed.back}">Back</a>
+        </div>
+        <p class="muted small" th:text="#{fixed.formIntro}">Posted every month on this day.</p>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/fixed-costs/items}" method="post" th:object="${form}">
+            <input type="hidden" th:field="*{id}">
+            <div class="field" th:classappend="${errors.containsKey('name')} ? 'has-error'">
+                <label for="name" th:text="#{fixed.name}">Name</label>
+                <input class="input" id="name" th:field="*{name}" maxlength="200" required autocomplete="off">
+                <div class="field-error" th:if="${errors.containsKey('name')}" th:text="#{${errors.get('name')}}">Error</div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('amount')} ? 'has-error'">
+                    <label for="amount" th:text="#{fixed.usualAmount}">Usual amount</label>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <input class="input" id="amount" th:field="*{amount}" inputmode="decimal" required autocomplete="off" maxlength="20">
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('amount')}" th:text="#{${errors.get('amount')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('dayOfMonth')} ? 'has-error'">
+                    <label for="day" th:text="#{fixed.day}">Day of month</label>
+                    <input class="input" id="day" type="number" min="1" max="31" th:field="*{dayOfMonth}" required>
+                    <div class="field-error" th:if="${errors.containsKey('dayOfMonth')}" th:text="#{${errors.get('dayOfMonth')}}">Error</div>
+                </div>
+            </div>
+            <div class="field" th:classappend="${errors.containsKey('categoryId')} ? 'has-error'">
+                <label for="cat" th:text="#{tx.category}">Category</label>
+                <select class="input" id="cat" name="categoryId" required>
+                    <optgroup th:each="ty : ${T(com.moneymgmt.domain.TxType).values()}" th:label="#{${'tx.type.' + ty}}">
+                        <th:block th:each="g : ${catOptions.forType(ty)}">
+                            <option th:each="c : ${g.categories}" th:value="${c.id}" th:text="${c.name(#locale)}"
+                                    th:selected="${form.categoryId != null and form.categoryId == c.id}">Category</option>
+                        </th:block>
+                    </optgroup>
+                </select>
+                <div class="field-error" th:if="${errors.containsKey('categoryId')}" th:text="#{${errors.get('categoryId')}}">Error</div>
+            </div>
+            <label class="check">
+                <input type="checkbox" th:field="*{active}">
+                <span th:text="#{fixed.active}">Active (post every month)</span>
+            </label>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/fixed-costs}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <form th:if="${form.id != null}" class="card danger-zone" th:action="@{/fixed-costs/items/{id}/delete(id=${form.id})}"
+          method="post" th:attr="data-confirm=#{fixed.delete.confirm}">
+        <div class="grow">
+            <strong th:text="#{fixed.delete}">Delete</strong>
+            <div class="muted small" th:text="#{fixed.delete.desc}">Posted transactions stay.</div>
+        </div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>

@@ -1,0 +1,215 @@
+package com.moneymgmt.web;
+
+import com.moneymgmt.domain.BudgetGroup;
+import com.moneymgmt.domain.Category;
+import com.moneymgmt.domain.Transaction;
+import com.moneymgmt.domain.TxType;
+import com.moneymgmt.repo.CategoryRepository;
+import com.moneymgmt.repo.TransactionRepository;
+import com.moneymgmt.service.IncentiveService;
+import com.moneymgmt.service.PostingService;
+import com.moneymgmt.service.TransactionService;
+import com.moneymgmt.util.AppTime;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.YearMonth;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/transactions")
+public class TransactionController {
+
+    private final TransactionService service;
+    private final TransactionRepository transactions;
+    private final CategoryRepository categories;
+    private final PostingService posting;
+    private final IncentiveService incentives;
+
+    public TransactionController(TransactionService service, TransactionRepository transactions,
+                                 CategoryRepository categories, PostingService posting, IncentiveService incentives) {
+        this.service = service;
+        this.transactions = transactions;
+        this.categories = categories;
+        this.posting = posting;
+        this.incentives = incentives;
+    }
+
+    /** List with filters. An HTMX request (filter change) gets only the results part of the page. */
+    @GetMapping
+    public String list(@RequestParam(required = false) String month,
+                       @RequestParam(required = false) TxType type,
+                       @RequestParam(required = false) BudgetGroup group,
+                       @RequestParam(required = false) Long category,
+                       @RequestParam(required = false) String q,
+                       HttpServletRequest request, Model model) {
+        posting.autoPostIfNeeded();
+        boolean allMonths = "all".equals(month);
+        YearMonth ym = allMonths ? null : orThisMonth(month);
+        var filter = new TransactionService.Filter(ym, type, group, category, TxForm.trimToNull(q));
+        var result = service.search(filter);
+
+        model.addAttribute("filter", filter);
+        model.addAttribute("allMonths", allMonths);
+        model.addAttribute("month", ym == null ? AppTime.thisMonth() : ym);
+        model.addAttribute("result", result);
+        model.addAttribute("groups", BudgetGroup.values());
+        model.addAttribute("types", TxType.values());
+        model.addAttribute("filterQuery", filterQuery(filter));
+        if (ym != null) {
+            model.addAttribute("incentive", incentives.forMonth(ym));
+        }
+        boolean hx = request.getHeader("HX-Request") != null;
+        model.addAttribute("hx", hx);
+        if (hx) {
+            return "transactions/list :: results";
+        }
+        return "transactions/list";
+    }
+
+    @GetMapping("/new")
+    public String newForm(@RequestParam(required = false) TxType type, @RequestParam(required = false) String month,
+                          Model model) {
+        TxForm f = new TxForm();
+        if (type != null) {
+            f.setType(type);
+        }
+        YearMonth ym = AppTime.parseMonth(month);
+        f.setDate(ym == null || ym.equals(AppTime.thisMonth()) ? AppTime.today() : ym.atDay(1));
+        return form(f, Map.of(), null, model);
+    }
+
+    @GetMapping("/{id}/edit")
+    public String edit(@PathVariable Long id, Model model) {
+        Transaction t = transactions.findWithDetailsById(id).orElseThrow(TransactionController::notFound);
+        return form(TxForm.of(t), Map.of(), t, model);
+    }
+
+    /** Saves a new or edited transaction (also used by the quick-add drawer). */
+    @PostMapping
+    public String save(@ModelAttribute TxForm f, org.springframework.validation.BindingResult binding, Model model,
+                       RedirectAttributes flash) {
+        Map<String, String> errors = FixedCostController.withBindingErrors(binding, new LinkedHashMap<>());
+        var amount = f.parsedAmount();
+        if (amount == null) {
+            errors.put("amount", "tx.error.amount");
+        } else if (amount.signum() == 0) {
+            errors.put("amount", "tx.error.amountZero");
+        }
+        Category category = f.getCategoryId() == null ? null : categories.findById(f.getCategoryId()).orElse(null);
+        if (category == null) {
+            errors.put("categoryId", "tx.error.category");
+        }
+        if (f.getDate() == null) {
+            errors.put("date", "tx.error.date");
+        }
+        Transaction existing = null;
+        if (f.getId() != null) {
+            existing = transactions.findWithDetailsById(f.getId()).orElseThrow(TransactionController::notFound);
+        }
+        if (!errors.isEmpty()) {
+            return form(f, errors, existing, model);
+        }
+
+        Transaction t = existing != null ? existing
+                : new Transaction(f.getDate(), category.getType(), amount, category, null);
+        t.setDate(f.getDate());
+        t.setType(category.getType());
+        t.setAmount(amount);
+        t.setCategory(category);
+        t.setDescription(TxForm.trimToNull(f.getDescription()));
+        t.setNote(TxForm.trimToNull(f.getNote()));
+        t.setTags(TxForm.cleanTags(f.getTags()));
+        service.save(t);
+
+        flash.addFlashAttribute("flash", existing != null ? "tx.updated" : "tx.saved");
+        return "redirect:" + back(f.getReturnTo(), YearMonth.from(t.getDate()));
+    }
+
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, @RequestParam(required = false) String returnTo,
+                         RedirectAttributes flash) {
+        Transaction t = transactions.findById(id).orElseThrow(TransactionController::notFound);
+        YearMonth month = YearMonth.from(t.getDate());
+        service.delete(id);
+        flash.addFlashAttribute("flash", "tx.deleted");
+        return "redirect:" + back(returnTo, month);
+    }
+
+    // ---------- Monthly incentive ----------
+
+    @GetMapping("/incentive")
+    public String incentive(@RequestParam(required = false) String month, Model model) {
+        YearMonth ym = orThisMonth(month);
+        model.addAttribute("form", IncentiveForm.of(ym, incentives.forMonth(ym)));
+        model.addAttribute("errors", Map.of());
+        model.addAttribute("history", incentives.history(12));
+        return "transactions/incentive";
+    }
+
+    @PostMapping("/incentive")
+    public String saveIncentive(@ModelAttribute("form") IncentiveForm f, org.springframework.validation.BindingResult binding,
+                                Model model, RedirectAttributes flash) {
+        Map<String, String> errors = FixedCostController.withBindingErrors(binding, f.validate());
+        if (!errors.isEmpty()) {
+            model.addAttribute("errors", errors);
+            model.addAttribute("history", incentives.history(12));
+            return "transactions/incentive";
+        }
+        incentives.save(f.toInput());
+        flash.addFlashAttribute("flash", "incentive.saved");
+        return "redirect:/transactions?month=" + f.yearMonth();
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private String form(TxForm f, Map<String, String> errors, Transaction existing, Model model) {
+        model.addAttribute("form", f);
+        model.addAttribute("errors", errors);
+        model.addAttribute("existing", existing);
+        return "transactions/form";
+    }
+
+    /** The non-month filters as "&type=…&q=…", so month links keep them. */
+    static String filterQuery(TransactionService.Filter f) {
+        StringBuilder sb = new StringBuilder();
+        if (f.type() != null) {
+            sb.append("&type=").append(f.type());
+        }
+        if (f.group() != null) {
+            sb.append("&group=").append(f.group());
+        }
+        if (f.categoryId() != null) {
+            sb.append("&category=").append(f.categoryId());
+        }
+        if (f.q() != null) {
+            sb.append("&q=").append(java.net.URLEncoder.encode(f.q(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return sb.toString();
+    }
+
+    static YearMonth orThisMonth(String month) {
+        YearMonth ym = AppTime.parseMonth(month);
+        return ym == null ? AppTime.thisMonth() : ym;
+    }
+
+    /** Where to go after saving: the page the form was opened from (same site only), else that month's list. */
+    static String back(String returnTo, YearMonth month) {
+        boolean safe = returnTo != null && returnTo.startsWith("/") && !returnTo.startsWith("//")
+                && !returnTo.contains("\\") && !returnTo.contains("..") && returnTo.length() < 200
+                && !returnTo.startsWith("/transactions") && !returnTo.startsWith("/login");
+        if (safe && !returnTo.contains("?")) {
+            return returnTo;
+        }
+        return "/transactions?month=" + month;
+    }
+
+    static ResponseStatusException notFound() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND);
+    }
+}

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{tx.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack">
+
+    <div class="page-tools">
+        <nav th:replace="~{transactions/list :: monthNav(false)}"></nav>
+        <div class="actions">
+            <a class="btn secondary" th:href="@{/transactions/incentive(month=${month})}">
+                <span th:text="#{incentive.open}">Incentive</span>
+            </a>
+            <a class="btn" th:href="@{/transactions/new(month=${month})}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                <span th:text="#{tx.new}">New transaction</span>
+            </a>
+        </div>
+    </div>
+
+    <form class="card filters" th:action="@{/transactions}" method="get" role="search"
+          th:attr="hx-get=@{/transactions}" hx-target="#tx-results" hx-swap="outerHTML" hx-push-url="true"
+          hx-trigger="change, input changed delay:400ms from:find input[name=q], submit">
+        <input type="hidden" name="month" th:value="${allMonths} ? 'all' : ${month}">
+        <div class="field search">
+            <label for="f-q" class="sr-only" th:text="#{tx.filter.search}">Search</label>
+            <input class="input" id="f-q" name="q" type="search" th:value="${filter.q}" autocomplete="off"
+                   th:placeholder="#{tx.filter.search}">
+        </div>
+        <div class="field">
+            <label for="f-type" th:text="#{tx.type}">Type</label>
+            <select class="input" id="f-type" name="type">
+                <option value="" th:text="#{tx.filter.all}">All</option>
+                <option th:each="ty : ${types}" th:value="${ty}" th:text="#{${'tx.type.' + ty}}"
+                        th:selected="${filter.type == ty}">Expense</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="f-group" th:text="#{tx.group}">Group</label>
+            <select class="input" id="f-group" name="group">
+                <option value="" th:text="#{tx.filter.all}">All</option>
+                <option th:each="g : ${groups}" th:value="${g}" th:text="#{${'group.' + g}}"
+                        th:selected="${filter.group == g}">Eat</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="f-cat" th:text="#{tx.category}">Category</label>
+            <select class="input" id="f-cat" name="category">
+                <option value="" th:text="#{tx.filter.all}">All</option>
+                <optgroup th:each="ty : ${types}" th:label="#{${'tx.type.' + ty}}">
+                    <th:block th:each="g : ${catOptions.forType(ty)}">
+                        <option th:each="c : ${g.categories}" th:value="${c.id}" th:text="${c.name(#locale)}"
+                                th:selected="${filter.categoryId != null and filter.categoryId == c.id}">Category</option>
+                    </th:block>
+                </optgroup>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <noscript><button type="submit" class="btn secondary" th:text="#{tx.filter.apply}">Apply</button></noscript>
+            <a class="btn secondary" th:href="@{/transactions(month=${allMonths} ? 'all' : ${month})}"
+               th:text="#{tx.filter.clear}">Clear</a>
+        </div>
+    </form>
+
+    <div id="tx-results" th:fragment="results" class="stack">
+        <!-- After an HTMX filter change the month links are refreshed too, so they keep the new filters. -->
+        <th:block th:if="${hx}"><nav th:replace="~{transactions/list :: monthNav(true)}"></nav></th:block>
+
+        <div class="grid totals">
+            <div class="card kpi small">
+                <div class="label" th:text="#{kpi.income}">Income</div>
+                <div class="value amount income" th:text="${@fmt.baht(result.totals.income)}">฿0</div>
+            </div>
+            <div class="card kpi small">
+                <div class="label" th:text="#{kpi.outcome}">Outcome</div>
+                <div class="value amount expense" th:text="${@fmt.baht(result.totals.expense)}">฿0</div>
+            </div>
+            <div class="card kpi small">
+                <div class="label" th:text="#{tx.totals.transfer}">Saving &amp; investing</div>
+                <div class="value amount investment" th:text="${@fmt.baht(result.totals.transfer)}">฿0</div>
+            </div>
+            <div class="card kpi small">
+                <div class="label" th:text="#{tx.totals.remaining}">Remaining</div>
+                <div class="value amount primary" th:text="${@fmt.baht(result.totals.remaining())}">฿0</div>
+            </div>
+        </div>
+
+        <div class="card incentive-card" th:if="${incentive != null and !filter.filtered}">
+            <div class="grow">
+                <div class="label muted" th:text="#{incentive.monthTitle(${#temporals.format(month, 'MMMM yyyy', #locale)})}">Incentive</div>
+                <div th:if="${incentive.incentive != null}" class="incentive-values">
+                    <strong class="amount income" th:text="${@fmt.baht(incentive.incentive.amount)}">฿0</strong>
+                    <span class="chip" th:if="${incentive.incentive.kpiPercent != null}"
+                          th:text="#{incentive.kpiShort(${@fmt.percent(incentive.incentive.kpiPercent)})}">KPI</span>
+                    <span class="chip" th:if="${incentive.incentive.incentivePercent != null}"
+                          th:text="#{incentive.pctShort(${@fmt.percent(incentive.incentive.incentivePercent)})}">10%</span>
+                    <span class="chip" th:if="${incentive.bonus != null}"
+                          th:text="#{incentive.bonusShort(${@fmt.baht(incentive.bonus.amount)})}">Bonus</span>
+                </div>
+                <div th:if="${incentive.incentive == null}" class="muted" th:text="#{incentive.none}">Not entered yet.</div>
+            </div>
+            <a class="btn secondary" th:href="@{/transactions/incentive(month=${month})}"
+               th:text="${incentive.incentive == null} ? #{incentive.add} : #{incentive.edit}">Edit</a>
+        </div>
+
+        <div class="card">
+            <p class="muted" th:if="${result.truncated}" th:text="#{tx.truncated(${T(com.moneymgmt.service.TransactionService).MAX_ROWS})}">Showing first 500.</p>
+            <div class="empty" th:if="${#lists.isEmpty(result.rows)}">
+                <p class="muted" th:text="${filter.filtered} ? #{tx.empty.filtered} : #{tx.empty}">Nothing yet.</p>
+                <button type="button" class="btn" data-open="quick-add" th:text="#{tx.new}">Add</button>
+            </div>
+            <ul class="tx-list" th:unless="${#lists.isEmpty(result.rows)}">
+                <th:block th:each="t, s : ${result.rows}">
+                    <li class="tx-date" th:if="${s.first or result.rows[s.index - 1].date != t.date}"
+                        th:text="${#temporals.format(t.date, 'EEE d MMM yyyy', #locale)}">Mon 2 Nov 2026</li>
+                    <li>
+                        <a class="tx-row" th:href="@{/transactions/{id}/edit(id=${t.id})}">
+                            <span class="dot" th:classappend="${@fmt.dot(t)}"></span>
+                            <div class="grow">
+                                <div class="title" th:text="${t.description ?: t.category.name(#locale)}">Lunch</div>
+                                <div class="sub">
+                                    <span th:text="${t.category.name(#locale)}">Eat</span>
+                                    <span class="chip" th:if="${t.installment != null and t.installmentNo != null}"
+                                          th:text="${t.installmentNo + '/' + t.installment.months}">3/10</span>
+                                    <span class="chip" th:if="${t.kpiPercent != null}"
+                                          th:text="#{incentive.kpiShort(${@fmt.percent(t.kpiPercent)})}">KPI</span>
+                                    <span class="tags" th:if="${t.tags != null}" th:text="${'#' + #strings.replace(t.tags, ', ', ' #')}">#tag</span>
+                                </div>
+                            </div>
+                            <span class="amount" th:classappend="${@fmt.kind(t.type)}" th:text="${@fmt.signed(t)}">−฿0</span>
+                        </a>
+                    </li>
+                </th:block>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Month switcher. oob = true when sent with an HTMX filter update. -->
+<nav th:fragment="monthNav(oob)" id="month-nav" class="month-nav" th:aria-label="#{tx.month}"
+     th:attr="hx-swap-oob=${oob} ? 'true' : null">
+    <th:block th:unless="${allMonths}">
+        <a class="icon-btn" th:href="@{/transactions} + '?month=' + ${month.minusMonths(1)} + ${filterQuery}"
+           th:aria-label="#{tx.month.prev}" th:title="#{tx.month.prev}">‹</a>
+        <strong class="month-label" th:text="${#temporals.format(month, 'MMMM yyyy', #locale)}">November 2026</strong>
+        <a class="icon-btn" th:href="@{/transactions} + '?month=' + ${month.plusMonths(1)} + ${filterQuery}"
+           th:aria-label="#{tx.month.next}" th:title="#{tx.month.next}">›</a>
+        <a class="link-small" th:href="@{/transactions} + '?month=all' + ${filterQuery}" th:text="#{tx.month.all}">All months</a>
+    </th:block>
+    <th:block th:if="${allMonths}">
+        <strong class="month-label" th:text="#{tx.month.allTitle}">All months</strong>
+        <a class="link-small" th:href="@{/transactions} + '?month=' + ${month} + ${filterQuery}" th:text="#{tx.month.back}">This month</a>
+    </th:block>
+</nav>
+</body>
+</html>

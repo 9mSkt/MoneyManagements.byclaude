@@ -27,7 +27,11 @@
     var open = e.target.closest('[data-open]');
     if (open) {
       var dlg = document.getElementById(open.getAttribute('data-open'));
-      if (dlg && dlg.showModal) { dlg.showModal(); }
+      if (dlg && dlg.showModal) {
+        dlg.showModal();
+        var first = dlg.querySelector('[data-autofocus]');
+        if (first) { first.focus(); }
+      }
       return;
     }
     if (e.target.closest('[data-close]')) {
@@ -41,6 +45,83 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     setTheme(root.getAttribute('data-theme') || 'light');
+  });
+
+  // ---------- Transaction form: Expense / Income / Saving switch shows the matching category list ----------
+  function store(key, value) {
+    try {
+      if (value === undefined) { return localStorage.getItem(key); }
+      localStorage.setItem(key, value);
+    } catch (err) { /* storage blocked: the form still works */ }
+    return null;
+  }
+
+  function showType(form, type, restore) {
+    form.querySelectorAll('select[data-for-type]').forEach(function (sel) {
+      var on = sel.getAttribute('data-for-type') === type;
+      sel.hidden = !on;
+      sel.disabled = !on;
+      if (on && restore) {
+        var last = store('lastCategory.' + type);
+        if (last && sel.querySelector('option[value="' + last + '"]')) { sel.value = last; }
+      }
+    });
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.matches('[data-type-radio]')) {
+      var form = e.target.closest('[data-tx-form]');
+      if (form) { showType(form, e.target.value, form.hasAttribute('data-remember-category')); }
+    }
+  });
+
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    // Ask before deleting.
+    var question = form.getAttribute && form.getAttribute('data-confirm');
+    if (question && !window.confirm(question)) {
+      e.preventDefault();
+      return;
+    }
+    // Quick add remembers the last category per type, so the next entry is one tap shorter.
+    if (form.hasAttribute && form.hasAttribute('data-remember-category')) {
+      var checked = form.querySelector('[data-type-radio]:checked');
+      var sel = checked && form.querySelector('select[data-for-type="' + checked.value + '"]');
+      if (sel) { store('lastCategory.' + checked.value, sel.value); }
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-remember-category]').forEach(function (form) {
+      var checked = form.querySelector('[data-type-radio]:checked');
+      showType(form, checked ? checked.value : 'EXPENSE', true);
+    });
+  });
+
+  // ---------- Installment form: show the calculated monthly charge ----------
+  function num(input) {
+    var v = parseFloat(String(input && input.value || '').replace(/[,฿%\s]/g, ''));
+    return isNaN(v) ? 0 : v;
+  }
+  function updateInstallment(form) {
+    var full = num(form.querySelector('[data-calc="full"]'));
+    var months = num(form.querySelector('[data-calc="months"]'));
+    var rate = num(form.querySelector('[data-calc="rate"]'));
+    var out = form.querySelector('[data-calc="out"]');
+    if (!out) { return; }
+    if (full > 0 && months > 0) {
+      var monthly = full / months + full * rate / 100;
+      out.placeholder = monthly.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+      out.placeholder = '';
+    }
+  }
+  document.addEventListener('input', function (e) {
+    var form = e.target.closest && e.target.closest('[data-installment-form]');
+    if (form) { updateInstallment(form); }
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-installment-form]').forEach(updateInstallment);
   });
 
   // HTMX: send the CSRF token with every request.

@@ -39,6 +39,25 @@ public final class Money {
         return part.multiply(BigDecimal.valueOf(100)).divide(whole, SCALE, ROUNDING);
     }
 
+    /**
+     * Reads an amount typed by the user: "1,250", "฿1250.5", " 99 " all work.
+     * Returns null when the text is empty or not a number.
+     */
+    public static BigDecimal parse(String text) {
+        if (text == null) {
+            return null;
+        }
+        String clean = text.replace(",", "").replace("฿", "").replace(" ", "").trim();
+        if (clean.isEmpty()) {
+            return null;
+        }
+        try {
+            return scale(new BigDecimal(clean));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     /** "12,345.00" style, always 2 decimals. */
     public static String format(BigDecimal value) {
         if (value == null) {

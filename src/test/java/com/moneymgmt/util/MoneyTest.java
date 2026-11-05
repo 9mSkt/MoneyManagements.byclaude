@@ -21,6 +21,16 @@ class MoneyTest {
     }
 
     @Test
+    void parsesTypedAmounts() {
+        assertThat(Money.parse("1,250")).isEqualByComparingTo("1250.00");
+        assertThat(Money.parse(" ฿99.555 ")).isEqualByComparingTo("99.56");
+        assertThat(Money.parse("-20")).isEqualByComparingTo("-20");
+        assertThat(Money.parse("")).isNull();
+        assertThat(Money.parse("abc")).isNull();
+        assertThat(Money.parse(null)).isNull();
+    }
+
+    @Test
     void formatsWithThousandsSeparator() {
         assertThat(Money.format(new BigDecimal("1234567.5"))).isEqualTo("1,234,567.50");
     }

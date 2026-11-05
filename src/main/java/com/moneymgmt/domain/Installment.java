@@ -38,6 +38,10 @@ public class Installment {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    /** First day of the last month the app posted a payment; a deleted posting is not posted again. */
+    @Column(name = "last_posted_month")
+    private LocalDate lastPostedMonth;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "import_batch_id")
     private ImportBatch importBatch;
@@ -70,6 +74,54 @@ public class Installment {
     public void setPaidCount(int paidCount) { this.paidCount = paidCount; }
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
+    public LocalDate getLastPostedMonth() { return lastPostedMonth; }
+    public void setLastPostedMonth(LocalDate lastPostedMonth) { this.lastPostedMonth = lastPostedMonth; }
     public ImportBatch getImportBatch() { return importBatch; }
+
+    /** Payments still to make. */
+    public int getRemainingCount() {
+        return Math.max(months - paidCount, 0);
+    }
+
+    /** Debt still to pay: monthly charge × payments left. */
+    public BigDecimal getRemainingDebt() {
+        return monthlyAmount.multiply(BigDecimal.valueOf(getRemainingCount()))
+                .setScale(com.moneymgmt.util.Money.SCALE, com.moneymgmt.util.Money.ROUNDING);
+    }
+
+    /** Total to pay over the whole plan (includes interest). */
+    public BigDecimal getTotalPayable() {
+        return monthlyAmount.multiply(BigDecimal.valueOf(months))
+                .setScale(com.moneymgmt.util.Money.SCALE, com.moneymgmt.util.Money.ROUNDING);
+    }
+
+    /** Month of the last payment. */
+    public LocalDate getEndMonth() {
+        return startMonth.plusMonths(Math.max(months, 1) - 1L);
+    }
+
+    public boolean isFinished() {
+        return paidCount >= months;
+    }
+
+    /** Paid share 0–100, for the progress bar. */
+    public BigDecimal getProgressPercent() {
+        return months <= 0 ? BigDecimal.ZERO
+                : com.moneymgmt.util.Money.percent(BigDecimal.valueOf(Math.min(paidCount, months)),
+                        BigDecimal.valueOf(months));
+    }
+
+    /**
+     * Monthly charge: full price ÷ months, plus a flat monthly interest of full price × rate %
+     * (the way Thai card instalment plans quote it, and how the sheet computes it).
+     */
+    public static BigDecimal monthlyCharge(BigDecimal fullPrice, int months, BigDecimal interestPercentPerMonth) {
+        BigDecimal base = fullPrice.divide(BigDecimal.valueOf(months), 6, java.math.RoundingMode.HALF_UP);
+        if (interestPercentPerMonth != null && interestPercentPerMonth.signum() != 0) {
+            base = base.add(fullPrice.multiply(interestPercentPerMonth)
+                    .divide(BigDecimal.valueOf(100), 6, java.math.RoundingMode.HALF_UP));
+        }
+        return com.moneymgmt.util.Money.scale(base);
+    }
     public void setImportBatch(ImportBatch importBatch) { this.importBatch = importBatch; }
 }

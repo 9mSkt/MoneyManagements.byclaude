@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${form.id == null} ? #{inst.new} : #{inst.edit}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.id == null} ? #{inst.new} : #{inst.edit}">New installment</h2>
+            <a class="link-small" th:href="@{/fixed-costs}" th:text="#{fixed.back}">Back</a>
+        </div>
+        <p class="muted small" th:text="#{inst.formIntro}">Payment posted on the 1st.</p>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/fixed-costs/installments}" method="post" th:object="${form}" data-installment-form>
+            <input type="hidden" th:field="*{id}">
+            <div class="field" th:classappend="${errors.containsKey('item')} ? 'has-error'">
+                <label for="item" th:text="#{inst.item}">Item</label>
+                <input class="input" id="item" th:field="*{item}" maxlength="200" required autocomplete="off">
+                <div class="field-error" th:if="${errors.containsKey('item')}" th:text="#{${errors.get('item')}}">Error</div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('fullPrice')} ? 'has-error'">
+                    <label for="full" th:text="#{inst.fullPrice}">Full price</label>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <input class="input" id="full" th:field="*{fullPrice}" inputmode="decimal" required autocomplete="off" maxlength="20" data-calc="full">
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('fullPrice')}" th:text="#{${errors.get('fullPrice')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('months')} ? 'has-error'">
+                    <label for="months" th:text="#{inst.months}">Months</label>
+                    <input class="input" id="months" type="number" min="1" max="120" th:field="*{months}" required data-calc="months">
+                    <div class="field-error" th:if="${errors.containsKey('months')}" th:text="#{${errors.get('months')}}">Error</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('interestPercent')} ? 'has-error'">
+                    <label for="rate" th:text="#{inst.interest}">Interest % per month</label>
+                    <div class="money-input suffix">
+                        <input class="input" id="rate" th:field="*{interestPercent}" inputmode="decimal" autocomplete="off" maxlength="10" data-calc="rate">
+                        <span aria-hidden="true">%</span>
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('interestPercent')}" th:text="#{${errors.get('interestPercent')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('startMonth')} ? 'has-error'">
+                    <label for="start" th:text="#{inst.start}">First payment month</label>
+                    <input class="input" id="start" type="month" th:field="*{startMonth}" required placeholder="2026-11">
+                    <div class="field-error" th:if="${errors.containsKey('startMonth')}" th:text="#{${errors.get('startMonth')}}">Error</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('paidCount')} ? 'has-error'">
+                    <label for="paid" th:text="#{inst.paidCount}">Payments already made</label>
+                    <input class="input" id="paid" type="number" min="0" max="120" th:field="*{paidCount}" required>
+                    <div class="field-error" th:if="${errors.containsKey('paidCount')}" th:text="#{${errors.get('paidCount')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('monthlyAmount')} ? 'has-error'">
+                    <label for="monthly" th:text="#{inst.monthlyOverride}">Monthly charge</label>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <input class="input" id="monthly" th:field="*{monthlyAmount}" inputmode="decimal" autocomplete="off" maxlength="20" data-calc="out">
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('monthlyAmount')}" th:text="#{${errors.get('monthlyAmount')}}">Error</div>
+                </div>
+            </div>
+            <p class="muted small" th:text="#{inst.monthlyHint}">Leave empty to calculate.</p>
+            <div class="field">
+                <label for="cat" th:text="#{tx.category}">Category</label>
+                <select class="input" id="cat" name="categoryId" required>
+                    <optgroup th:each="g : ${catOptions.expense}" th:label="#{${'group.' + g.group}}">
+                        <option th:each="c : ${g.categories}" th:value="${c.id}" th:text="${c.name(#locale)}"
+                                th:selected="${form.categoryId != null and form.categoryId == c.id}">Category</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/fixed-costs}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <form th:if="${form.id != null}" class="card danger-zone" th:action="@{/fixed-costs/installments/{id}/delete(id=${form.id})}"
+          method="post" th:attr="data-confirm=#{inst.delete.confirm}">
+        <div class="grow">
+            <strong th:text="#{inst.delete}">Delete</strong>
+            <div class="muted small" th:text="#{inst.delete.desc}">Payments stay.</div>
+        </div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>

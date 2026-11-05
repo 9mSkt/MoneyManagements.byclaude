@@ -31,6 +31,10 @@ public class RecurringItem {
     @Column(nullable = false)
     private boolean active = true;
 
+    /** First day of the last month the app posted this item; a deleted posting is not posted again. */
+    @Column(name = "last_posted_month")
+    private java.time.LocalDate lastPostedMonth;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "import_batch_id")
     private ImportBatch importBatch;
@@ -57,6 +61,8 @@ public class RecurringItem {
     public void setAccount(Account account) { this.account = account; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public java.time.LocalDate getLastPostedMonth() { return lastPostedMonth; }
+    public void setLastPostedMonth(java.time.LocalDate lastPostedMonth) { this.lastPostedMonth = lastPostedMonth; }
     public ImportBatch getImportBatch() { return importBatch; }
     public void setImportBatch(ImportBatch importBatch) { this.importBatch = importBatch; }
 }

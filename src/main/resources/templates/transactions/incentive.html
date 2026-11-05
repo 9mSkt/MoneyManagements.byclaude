@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{incentive.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow" th:with="ym=${form.yearMonth()}">
+    <div class="page-tools">
+        <nav class="month-nav" th:aria-label="#{tx.month}">
+            <a class="icon-btn" th:href="@{/transactions/incentive(month=${ym.minusMonths(1)})}"
+               th:aria-label="#{tx.month.prev}" th:title="#{tx.month.prev}">‹</a>
+            <strong class="month-label" th:text="${#temporals.format(ym, 'MMMM yyyy', #locale)}">November 2026</strong>
+            <a class="icon-btn" th:href="@{/transactions/incentive(month=${ym.plusMonths(1)})}"
+               th:aria-label="#{tx.month.next}" th:title="#{tx.month.next}">›</a>
+        </nav>
+        <a class="link-small" th:href="@{/transactions(month=${ym})}" th:text="#{tx.backToList}">Back</a>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{incentive.monthTitle(${#temporals.format(ym, 'MMMM yyyy', #locale)})}">Incentive</h2></div>
+        <p class="muted small" th:text="#{incentive.intro}">Type the numbers from your pay slip.</p>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/transactions/incentive}" method="post" th:object="${form}">
+            <input type="hidden" th:field="*{month}">
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('kpiPercent')} ? 'has-error'">
+                    <label for="kpi" th:text="#{incentive.kpi}">KPI %</label>
+                    <div class="money-input suffix">
+                        <input class="input" id="kpi" th:field="*{kpiPercent}" inputmode="decimal" autocomplete="off" maxlength="10">
+                        <span aria-hidden="true">%</span>
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('kpiPercent')}" th:text="#{${errors.get('kpiPercent')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('incentivePercent')} ? 'has-error'">
+                    <label for="ipct" th:text="#{incentive.percent}">Incentive %</label>
+                    <div class="money-input suffix">
+                        <input class="input" id="ipct" th:field="*{incentivePercent}" inputmode="decimal" autocomplete="off" maxlength="10">
+                        <span aria-hidden="true">%</span>
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('incentivePercent')}" th:text="#{${errors.get('incentivePercent')}}">Error</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('amount')} ? 'has-error'">
+                    <label for="amount" th:text="#{incentive.amount}">Incentive amount</label>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <input class="input" id="amount" th:field="*{amount}" inputmode="decimal" autocomplete="off" required maxlength="20">
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('amount')}" th:text="#{${errors.get('amount')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('bonus')} ? 'has-error'">
+                    <label for="bonus" th:text="#{incentive.bonus}">Bonus (optional)</label>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <input class="input" id="bonus" th:field="*{bonus}" inputmode="decimal" autocomplete="off" maxlength="20">
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('bonus')}" th:text="#{${errors.get('bonus')}}">Error</div>
+                </div>
+            </div>
+            <div class="field" th:classappend="${errors.containsKey('date')} ? 'has-error'">
+                <label for="date" th:text="#{incentive.date}">Paid on</label>
+                <input class="input" type="date" id="date" name="date" th:value="*{date}" required
+                       th:min="${ym.atDay(1)}" th:max="${ym.atEndOfMonth()}">
+                <div class="field-error" th:if="${errors.containsKey('date')}" th:text="#{${errors.get('date')}}">Error</div>
+            </div>
+            <div class="field">
+                <label for="note" th:text="#{tx.note}">Note</label>
+                <input class="input" id="note" th:field="*{note}" maxlength="1000" autocomplete="off">
+            </div>
+            <p class="muted small" th:text="#{incentive.bonusNote}">Leave bonus empty to remove it.</p>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/transactions(month=${ym})}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{incentive.history}">Last 12 months</h2></div>
+        <p class="muted" th:if="${#lists.isEmpty(history)}" th:text="#{incentive.historyNone}">None yet.</p>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(history)}">
+            <table class="data">
+                <thead><tr>
+                    <th th:text="#{import.col.month}">Month</th>
+                    <th class="num" th:text="#{incentive.kpi}">KPI %</th>
+                    <th class="num" th:text="#{incentive.percent}">Incentive %</th>
+                    <th class="num" th:text="#{incentive.amount}">Amount</th>
+                </tr></thead>
+                <tbody>
+                <tr th:each="h : ${history}">
+                    <td><a th:href="@{/transactions/incentive(month=${#temporals.format(h.date, 'yyyy-MM')})}"
+                           th:text="${#temporals.format(h.date, 'MMM yyyy', #locale)}">Nov 2026</a></td>
+                    <td class="num" th:text="${@fmt.percent(h.kpiPercent)}">95%</td>
+                    <td class="num" th:text="${@fmt.percent(h.incentivePercent)}">10%</td>
+                    <td class="num amount income" th:text="${@fmt.baht(h.amount)}">฿0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</body>
+</html>

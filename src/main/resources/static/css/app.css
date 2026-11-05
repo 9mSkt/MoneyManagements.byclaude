@@ -246,3 +246,121 @@ table.data td.num, table.data th.num { text-align: right; }
 .segmented button, .segmented a { border: 0; background: var(--surface); color: var(--text-muted); font: inherit; font-weight: 600; font-size: 0.85rem; padding: 8px 14px; cursor: pointer; }
 .segmented .on { background: var(--primary); color: var(--on-primary); }
 .segmented a:hover { text-decoration: none; }
+
+/* ---------- Phase 2: transactions, fixed costs, installments ---------- */
+.small { font-size: 0.85rem; }
+.narrow { max-width: 680px; }
+.link-small { font-size: 0.88rem; font-weight: 500; }
+.warning-text { color: var(--warning); }
+.add-btn { height: 40px; padding: 0 14px; }
+@media (max-width: 768px) { .add-btn { display: none; } }
+
+.page-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.month-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.month-nav .icon-btn { font-size: 1.2rem; line-height: 1; }
+.month-nav .icon-btn:hover { text-decoration: none; }
+.month-label { min-width: 9.5em; text-align: center; font-size: 1.02rem; }
+.card-head.wrap { flex-wrap: wrap; }
+
+.filters { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: end; padding: 16px; }
+.filters .field { margin: 0; }
+.filters .field label { font-size: 0.78rem; }
+.filter-actions { display: flex; gap: 8px; }
+.filter-actions .btn { height: 44px; }
+@media (max-width: 1024px) { .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } .filters .search { grid-column: 1 / -1; } }
+@media (max-width: 560px) {
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+  .filters .filter-actions { grid-column: 1 / -1; }
+  .filters .filter-actions .btn { flex: 1; }
+}
+
+.totals { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kpi.small { padding: 14px 16px; }
+.kpi.small .value { font-size: 1.15rem; margin-top: 2px; }
+@media (max-width: 860px) { .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .kpi.small { padding: 12px; } .kpi.small .value { font-size: 1rem; } }
+
+.chip { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 600; padding: 0 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-muted); line-height: 1.6; font-variant-numeric: tabular-nums; }
+.tags { color: var(--primary); font-size: 0.78rem; }
+
+.incentive-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; }
+.incentive-card .grow { flex: 1; min-width: 200px; }
+.incentive-card .label { font-size: 0.82rem; }
+.incentive-values { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+
+.tx-list { list-style: none; margin: 0; padding: 0; }
+.tx-date { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 14px 4px 6px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.02em; }
+.tx-list > li.tx-date:first-child { padding-top: 0; }
+.tx-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); color: var(--text); border-radius: 8px; }
+.tx-row:hover { background: var(--surface-2); text-decoration: none; }
+.tx-row .grow { flex: 1; min-width: 0; }
+.tx-row .title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-row .sub { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tx-row .amount { font-weight: 600; }
+.empty { text-align: center; padding: 24px 8px; }
+
+/* Group colour dots (Phase 3 proposes a distinct colour per group) */
+.dot.g-INCOME { background: var(--income); }
+.dot.g-FIXED { background: var(--text-muted); }
+.dot.g-GAS { background: var(--warning); }
+.dot.g-NECESSARY { background: var(--primary); }
+.dot.g-SHOPPING { background: var(--investment); }
+.dot.g-EAT { background: var(--expense); }
+.dot.g-SAVING { background: var(--income); }
+.dot.g-INVESTMENT, .dot.g-TRANSFER { background: var(--investment); }
+.dot.g-none { background: transparent; border: 2px solid var(--border); }
+
+/* Forms */
+.form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 420px) { .form-row { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+.money-input { position: relative; }
+.money-input > span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.money-input .input { padding-left: 30px; font-variant-numeric: tabular-nums; }
+.money-input.suffix > span { left: auto; right: 12px; }
+.money-input.suffix .input { padding-left: 12px; padding-right: 30px; }
+#qa-amount, #tx-amount { font-size: 1.3rem; font-weight: 600; height: 52px; }
+textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
+select.input { appearance: auto; }
+.field-error { color: var(--over); font-size: 0.82rem; }
+.has-error .input { border-color: var(--over); }
+.more-fields { margin-bottom: 14px; }
+.more-fields summary { cursor: pointer; color: var(--primary); font-size: 0.88rem; font-weight: 500; padding: 4px 0 10px; }
+.check { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--primary); }
+.type-switch { display: flex; width: 100%; margin-bottom: 14px; }
+.type-switch label { flex: 1; position: relative; text-align: center; cursor: pointer; padding: 9px 6px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); background: var(--surface); }
+.type-switch label + label { border-left: 1px solid var(--border); }
+.type-switch input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.type-switch label:has(input:checked) { background: var(--primary); color: var(--on-primary); }
+.type-switch label:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
+.actions .grow-btn { flex: 1; }
+.tx-form .actions { margin-top: 4px; }
+dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
+
+.info-list { list-style: none; margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); font-size: 0.86rem; color: var(--text-muted); display: grid; gap: 4px; }
+.danger-zone { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.danger-zone .grow { flex: 1; min-width: 180px; }
+.btn.danger { background: var(--surface); color: var(--over); border-color: var(--over); }
+.btn.danger:hover { background: var(--over-soft); }
+.btn.small-btn { height: 36px; padding: 0 12px; font-size: 0.85rem; }
+
+/* Fixed costs & installments */
+.sub-head { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 18px 0 4px; }
+.post-list .inline-amount { display: flex; align-items: center; gap: 8px; }
+.post-list .inline-amount .input { width: 120px; height: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) {
+  .post-list li { flex-wrap: wrap; }
+  .post-list .grow { flex-basis: calc(100% - 30px); }
+  .post-list .inline-amount, .post-list li > a.amount { margin-left: 22px; }
+  .post-list .inline-amount .input { width: 110px; }
+}
+.two-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1024px) { .two-even { grid-template-columns: minmax(0, 1fr); } }
+.list li.paused { opacity: 0.6; }
+.list a.title { color: var(--text); display: block; }
+.plan-list li { display: block; }
+.plan-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.plan-top .title { min-width: 0; }
+.plan-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+/* Phone: the top bar hides its title, so show the page title above the content (must come after .page-title). */
+@media (max-width: 768px) { .page-title { display: block; } }

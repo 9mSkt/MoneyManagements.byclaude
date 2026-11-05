@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.fixed}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack">
+
+    <div class="grid totals">
+        <div class="card kpi small">
+            <div class="label" th:text="#{fixed.total}">Fixed costs / month</div>
+            <div class="value amount expense" th:text="${@fmt.baht(fixedTotal)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{inst.monthlyTotal}">Installments / month</div>
+            <div class="value amount expense" th:text="${@fmt.baht(planMonthly)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{inst.debtTotal}">Remaining debt</div>
+            <div class="value amount warning-text" th:text="${@fmt.baht(planDebt)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{inst.running}">Running plans</div>
+            <div class="value amount" th:text="${runningCount}">0</div>
+        </div>
+    </div>
+
+    <!-- This month: what is posted, with quick amount changes -->
+    <div class="card">
+        <div class="card-head wrap">
+            <h2 th:text="#{fixed.monthTitle}">This month</h2>
+            <nav class="month-nav" th:aria-label="#{tx.month}">
+                <a class="icon-btn" th:href="@{/fixed-costs(month=${month.minusMonths(1)})}"
+                   th:aria-label="#{tx.month.prev}" th:title="#{tx.month.prev}">‹</a>
+                <strong class="month-label" th:text="${#temporals.format(month, 'MMMM yyyy', #locale)}">November 2026</strong>
+                <a class="icon-btn" th:href="@{/fixed-costs(month=${month.plusMonths(1)})}"
+                   th:aria-label="#{tx.month.next}" th:title="#{tx.month.next}">›</a>
+            </nav>
+        </div>
+        <p class="muted small" th:text="#{fixed.autoNote}">Posted automatically.</p>
+
+        <h3 class="sub-head" th:text="#{fixed.items}">Fixed costs</h3>
+        <p class="muted" th:if="${#lists.isEmpty(status.items)}" th:text="#{fixed.none}">No fixed costs yet.</p>
+        <ul class="list post-list">
+            <li th:each="s : ${status.items}">
+                <span class="dot" th:classappend="${s.posted != null} ? 'g-INCOME' : 'g-none'"></span>
+                <div class="grow">
+                    <div class="title" th:text="${s.item.name}">Car</div>
+                    <div class="sub">
+                        <span th:text="${s.item.category.name(#locale)}">Car payment</span> ·
+                        <span th:text="${#temporals.format(s.dueDate, 'd MMM', #locale)}">5 Nov</span> ·
+                        <span th:text="${s.posted != null} ? #{fixed.status.posted} : #{fixed.status.notPosted}">Posted</span>
+                    </div>
+                </div>
+                <form th:if="${s.posted != null}" class="inline-amount" method="post"
+                      th:action="@{/fixed-costs/posted/{id}(id=${s.posted.id})}">
+                    <input type="hidden" name="month" th:value="${month}">
+                    <label class="sr-only" th:for="${'adj-' + s.posted.id}" th:text="#{tx.amount}">Amount</label>
+                    <input class="input" th:id="${'adj-' + s.posted.id}" name="amount" inputmode="decimal"
+                           th:value="${s.posted.amount}" autocomplete="off" maxlength="20">
+                    <button type="submit" class="btn secondary small-btn" th:text="#{fixed.update}">Update</button>
+                </form>
+                <form th:if="${s.posted == null}" method="post" class="inline-amount"
+                      th:action="@{/fixed-costs/post-item/{id}(id=${s.item.id})}">
+                    <input type="hidden" name="month" th:value="${month}">
+                    <span class="amount muted" th:text="${@fmt.baht(s.item.amount)}">฿0</span>
+                    <button type="submit" class="btn small-btn" th:text="#{fixed.post}">Post</button>
+                </form>
+            </li>
+        </ul>
+
+        <h3 class="sub-head" th:text="#{inst.title}">Installments</h3>
+        <p class="muted" th:if="${#lists.isEmpty(status.plans)}" th:text="#{inst.noneThisMonth}">None this month.</p>
+        <ul class="list post-list">
+            <li th:each="s : ${status.plans}">
+                <span class="dot" th:classappend="${s.posted != null} ? 'g-INCOME' : 'g-none'"></span>
+                <div class="grow">
+                    <div class="title" th:text="${s.plan.item}">iPhone</div>
+                    <div class="sub">
+                        <span class="chip" th:text="${s.posted != null and s.posted.installmentNo != null}
+                                ? ${s.posted.installmentNo + '/' + s.plan.months} : ${s.nextNo + '/' + s.plan.months}">3/10</span>
+                        <span th:text="${s.posted != null} ? #{fixed.status.posted} : #{fixed.status.notPosted}">Posted</span>
+                    </div>
+                </div>
+                <a th:if="${s.posted != null}" class="amount expense" th:href="@{/transactions/{id}/edit(id=${s.posted.id})}"
+                   th:text="${@fmt.baht(s.posted.amount)}">฿0</a>
+                <form th:if="${s.posted == null}" method="post" class="inline-amount"
+                      th:action="@{/fixed-costs/post-plan/{id}(id=${s.plan.id})}">
+                    <input type="hidden" name="month" th:value="${month}">
+                    <span class="amount muted" th:text="${@fmt.baht(s.plan.monthlyAmount)}">฿0</span>
+                    <button type="submit" class="btn small-btn" th:text="#{fixed.post}">Post</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <div class="grid two-even">
+        <!-- Fixed cost definitions -->
+        <div class="card">
+            <div class="card-head">
+                <h2 th:text="#{fixed.items}">Fixed costs</h2>
+                <a class="btn small-btn" th:href="@{/fixed-costs/items/new}">
+                    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                    <span th:text="#{fixed.add}">Add</span>
+                </a>
+            </div>
+            <p class="muted" th:if="${#lists.isEmpty(items)}" th:text="#{fixed.none}">None yet.</p>
+            <ul class="list">
+                <li th:each="r : ${items}" th:classappend="${!r.active} ? 'paused'">
+                    <div class="grow">
+                        <a class="title" th:href="@{/fixed-costs/items/{id}/edit(id=${r.id})}" th:text="${r.name}">Car</a>
+                        <div class="sub">
+                            <span th:text="${r.category.name(#locale)}">Car payment</span> ·
+                            <span th:text="#{fixed.dayShort(${r.dayOfMonth})}">day 5</span>
+                            <span class="chip" th:if="${!r.active}" th:text="#{fixed.paused}">Paused</span>
+                        </div>
+                    </div>
+                    <span class="amount" th:classappend="${@fmt.kind(r.category.type)}" th:text="${@fmt.baht(r.amount)}">฿0</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Installment plans -->
+        <div class="card">
+            <div class="card-head">
+                <h2 th:text="#{inst.title}">Installments</h2>
+                <a class="btn small-btn" th:href="@{/fixed-costs/installments/new}">
+                    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                    <span th:text="#{inst.add}">Add</span>
+                </a>
+            </div>
+            <p class="muted" th:if="${#lists.isEmpty(plans)}" th:text="#{inst.none}">None yet.</p>
+            <ul class="list plan-list">
+                <li th:each="p : ${plans}" th:classappend="${p.finished} ? 'paused'">
+                    <div class="grow">
+                        <div class="plan-top">
+                            <a class="title" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})}" th:text="${p.item}">iPhone</a>
+                            <span class="amount expense" th:text="#{inst.perMonth(${@fmt.baht(p.monthlyAmount)})}">฿0 / month</span>
+                        </div>
+                        <div class="track" role="progressbar" aria-valuemin="0" th:aria-valuemax="${p.months}"
+                             th:aria-valuenow="${p.paidCount}" th:aria-label="${p.item}">
+                            <div class="fill" th:style="'width:' + ${p.progressPercent} + '%'"></div>
+                        </div>
+                        <div class="sub plan-meta">
+                            <span><strong class="num" th:text="${p.paidCount + '/' + p.months}">3/10</strong>
+                                <span th:text="${p.finished} ? #{inst.finished} : #{inst.paid}">paid</span></span>
+                            <span th:unless="${p.finished}" th:text="#{inst.remaining(${@fmt.baht(p.remainingDebt)})}">฿0 left</span>
+                            <span th:text="${#temporals.format(p.startMonth, 'MMM yy', #locale)} + ' – ' + ${#temporals.format(p.endMonth, 'MMM yy', #locale)}">Jan – Oct</span>
+                            <span th:if="${p.interestPercent.signum() > 0}"
+                                  th:text="#{inst.interestShort(${@fmt.percent(p.interestPercent)})}">0.69%/mo</span>
+                            <span th:if="${p.interestPercent.signum() == 0}" th:text="#{inst.zero}">0%</span>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+</body>
+</html>

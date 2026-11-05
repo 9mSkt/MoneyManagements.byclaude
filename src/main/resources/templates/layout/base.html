@@ -26,7 +26,7 @@
            th:href="@{${n.path}}" th:attr="aria-current=${n.isActive(currentPath)} ? 'page' : null">
             <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg} + '#' + ${n.key}"/></svg>
             <span th:text="#{${'nav.' + n.key}}">Page</span>
-            <span class="soon" th:if="${n.phase > 1}" th:text="'P' + ${n.phase}">P2</span>
+            <span class="soon" th:if="${n.comingSoon}" th:text="'P' + ${n.phase}">P2</span>
         </a>
     </aside>
 
@@ -34,6 +34,10 @@
         <header class="topbar">
             <a class="brand topbar-brand" th:href="@{/}"><span class="brand-mark">฿</span><span th:text="#{app.short}">Money</span></a>
             <h1 th:text="${title}">Title</h1>
+            <button type="button" class="btn add-btn" data-open="quick-add">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                <span th:text="#{top.add}">Add</span>
+            </button>
             <nav class="lang-switch" th:aria-label="#{top.language}">
                 <a th:href="@{${currentPath}(lang='en')}" th:classappend="${#locale.language != 'th'} ? 'on'" hreflang="en">EN</a>
                 <a th:href="@{${currentPath}(lang='th')}" th:classappend="${#locale.language == 'th'} ? 'on'" hreflang="th">TH</a>
@@ -52,6 +56,8 @@
 
         <main class="content">
             <h1 class="page-title" th:text="${title}">Title</h1>
+            <div class="alert info flash" th:if="${flash}" th:text="#{${flash}}" role="status">Saved.</div>
+            <div class="alert error flash" th:if="${flashError}" th:text="#{${flashError}}" role="alert">Error.</div>
             <th:block th:replace="${content}"/>
         </main>
     </div>
@@ -85,7 +91,7 @@
             <a class="nav-link" th:classappend="${n.isActive(currentPath)} ? 'active'" th:href="@{${n.path}}">
                 <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg} + '#' + ${n.key}"/></svg>
                 <span th:text="#{${'nav.' + n.key}}">Page</span>
-                <span class="soon" th:if="${n.phase > 1}" th:text="'P' + ${n.phase}">P2</span>
+                <span class="soon" th:if="${n.comingSoon}" th:text="'P' + ${n.phase}">P2</span>
             </a>
         </li>
     </ul>
@@ -98,10 +104,14 @@
             <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#close}"/></svg>
         </button>
     </div>
-    <div class="sheet-body">
-        <p class="muted" th:text="#{quickAdd.body}">Coming in Phase 2.</p>
-        <button type="button" class="btn secondary" data-close th:text="#{quickAdd.close}">Close</button>
-    </div>
+    <form class="sheet-body tx-form" th:action="@{/transactions}" method="post" data-tx-form data-remember-category>
+        <input type="hidden" name="returnTo" th:value="${currentPath}">
+        <th:block th:replace="~{fragments/tx :: fields(${quickForm}, null, 'qa')}"/>
+        <div class="actions">
+            <button type="submit" class="btn grow-btn" th:text="#{tx.save}">Save</button>
+            <button type="button" class="btn secondary" data-close th:text="#{quickAdd.close}">Close</button>
+        </div>
+    </form>
 </dialog>
 
 <script th:src="@{/vendor/htmx-2.0.4.min.js}"></script>

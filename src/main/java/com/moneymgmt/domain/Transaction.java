@@ -40,6 +40,10 @@ public class Transaction {
     @JoinColumn(name = "installment_id")
     private Installment installment;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recurring_item_id")
+    private RecurringItem recurringItem;
+
     @Column(name = "installment_no")
     private Integer installmentNo;
 
@@ -93,6 +97,8 @@ public class Transaction {
     public void setTags(String tags) { this.tags = tags; }
     public Installment getInstallment() { return installment; }
     public void setInstallment(Installment installment) { this.installment = installment; }
+    public RecurringItem getRecurringItem() { return recurringItem; }
+    public void setRecurringItem(RecurringItem recurringItem) { this.recurringItem = recurringItem; }
     public Integer getInstallmentNo() { return installmentNo; }
     public void setInstallmentNo(Integer installmentNo) { this.installmentNo = installmentNo; }
     public BigDecimal getKpiPercent() { return kpiPercent; }

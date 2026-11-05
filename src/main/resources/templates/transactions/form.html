@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${form.id == null} ? #{tx.new} : #{tx.edit}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.id == null} ? #{tx.new} : #{tx.edit}">New transaction</h2>
+            <a class="link-small" th:href="@{/transactions(month=${#temporals.format(form.date ?: today, 'yyyy-MM')})}"
+               th:text="#{tx.backToList}">Back</a>
+        </div>
+
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check the fields.</div>
+
+        <ul class="info-list" th:if="${existing != null}">
+            <li th:if="${existing.installment != null}"
+                th:text="#{tx.info.installment(${existing.installment.item}, ${existing.installmentNo}, ${existing.installment.months})}">Installment</li>
+            <li th:if="${existing.recurringItem != null}"
+                th:text="#{tx.info.recurring(${existing.recurringItem.name})}">Fixed cost</li>
+            <li th:if="${existing.kpiPercent != null or existing.incentivePercent != null}">
+                <span th:text="#{tx.info.incentive}">Incentive entry</span>
+                <a th:href="@{/transactions/incentive(month=${#temporals.format(existing.date, 'yyyy-MM')})}" th:text="#{incentive.edit}">Edit</a>
+            </li>
+            <li th:if="${existing.importBatch != null}" th:text="#{tx.info.imported}">From the sheet import</li>
+        </ul>
+
+        <form class="tx-form" th:action="@{/transactions}" method="post" data-tx-form>
+            <input type="hidden" name="id" th:value="${form.id}">
+            <input type="hidden" name="returnTo" th:value="${form.returnTo}">
+            <th:block th:replace="~{fragments/tx :: fields(${form}, ${errors}, 'tx')}"/>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/transactions(month=${#temporals.format(form.date ?: today, 'yyyy-MM')})}"
+                   th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <form th:if="${form.id != null}" class="card danger-zone" th:action="@{/transactions/{id}/delete(id=${form.id})}"
+          method="post" th:attr="data-confirm=#{tx.delete.confirm}">
+        <div class="grow">
+            <strong th:text="#{tx.delete}">Delete</strong>
+            <div class="muted small" th:text="#{tx.delete.desc}">This cannot be undone.</div>
+        </div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>
