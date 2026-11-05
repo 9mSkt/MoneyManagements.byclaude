@@ -44,10 +44,14 @@ public class TransactionService {
     private final TransactionRepository transactions;
     private final com.moneymgmt.repo.InstallmentRepository installments;
 
+    private final int payday;
+
     public TransactionService(TransactionRepository transactions,
-                              com.moneymgmt.repo.InstallmentRepository installments) {
+                              com.moneymgmt.repo.InstallmentRepository installments,
+                              @org.springframework.beans.factory.annotation.Value("${app.budget.payday:28}") int payday) {
         this.transactions = transactions;
         this.installments = installments;
+        this.payday = payday;
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +67,13 @@ public class TransactionService {
             }
             List<jakarta.persistence.criteria.Predicate> p = new ArrayList<>();
             if (f.month() != null) {
-                p.add(cb.between(root.get("date"), f.month().atDay(1), f.month().atEndOfMonth()));
+                // Spending by calendar month; income by pay period (the salary of 28 Oct is November's money).
+                java.time.LocalDate[] pay = StatsService.payPeriod(f.month(), payday);
+                p.add(cb.or(
+                        cb.and(cb.notEqual(root.get("type"), TxType.INCOME),
+                                cb.between(root.get("date"), f.month().atDay(1), f.month().atEndOfMonth())),
+                        cb.and(cb.equal(root.get("type"), TxType.INCOME),
+                                cb.between(root.get("date"), pay[0], pay[1]))));
             }
             if (f.type() != null) {
                 p.add(cb.equal(root.get("type"), f.type()));

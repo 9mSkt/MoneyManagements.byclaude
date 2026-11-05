@@ -51,9 +51,7 @@ public class IncentiveService {
      * month's payday (the whole calendar month when the payday rule is off).
      */
     public LocalDate[] payPeriod(YearMonth month) {
-        LocalDate from = StatsService.payDate(month.minusMonths(1), payday);
-        LocalDate next = StatsService.payDate(month, payday);
-        return new LocalDate[] {from == null ? month.atDay(1) : from, next == null ? month.atEndOfMonth() : next.minusDays(1)};
+        return StatsService.payPeriod(month, payday);
     }
 
     /** The month an income dated {@code date} counts toward. */

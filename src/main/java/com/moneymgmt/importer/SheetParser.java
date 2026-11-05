@@ -72,9 +72,22 @@ public class SheetParser {
     private final List<Note> notes = new ArrayList<>();
     private final Set<String> newCategories = new LinkedHashSet<>();
 
+    /** Payday (e.g. 28): income of a month tab is dated on the payday of the month before; 0 = the 1st. */
+    private int payday;
+
     public static ImportPlan parse(InputStream in) throws IOException {
+        return parse(in, 0);
+    }
+
+    /**
+     * Reads the sheet. With a payday, income of each month tab is dated on the real payday of the month before
+     * (the Nov26 salary is paid on 28 Oct), so it still counts toward that tab's month.
+     */
+    public static ImportPlan parse(InputStream in, int payday) throws IOException {
         try (Workbook wb = WorkbookFactory.create(in)) {
-            return new SheetParser().read(wb);
+            SheetParser p = new SheetParser();
+            p.payday = payday;
+            return p.read(wb);
         }
     }
 
@@ -160,7 +173,8 @@ public class SheetParser {
                 continue;
             }
             BigDecimal incentivePct = "INCENTIVE".equals(cat.code()) ? incentivePercent(sheet, r, amount, salary) : null;
-            transactions.add(new TxLine(month, TxType.INCOME, cat, amount, label, null, null, null, incentivePct));
+            LocalDate paid = payday > 0 ? com.moneymgmt.service.StatsService.payDate(java.time.YearMonth.from(month).minusMonths(1), payday) : month;
+            transactions.add(new TxLine(paid, TxType.INCOME, cat, amount, label, null, null, null, incentivePct));
             income = income.add(amount);
             rows++;
         }

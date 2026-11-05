@@ -52,6 +52,24 @@ class SheetParserTest {
     }
 
     @Test
+    void withAPaydayIncomeIsDatedOnThePaydayBeforeItsMonth() throws Exception {
+        ImportPlan withPayday;
+        try (var wb = WorkbookFactory.create(new ByteArrayInputStream(SampleWorkbook.build()))) {
+            wb.getCreationHelper().createFormulaEvaluator().evaluateAll();
+            var out = new java.io.ByteArrayOutputStream();
+            wb.write(out);
+            withPayday = SheetParser.parse(new ByteArrayInputStream(out.toByteArray()), 28);
+        }
+        // Feb26 income → Wed 28 Jan 2026; Jan26 income → Fri 26 Dec 2025 (28 Dec is a Sunday). Spending stays on the 1st.
+        assertThat(withPayday.transactions()).filteredOn(t -> t.description().equals("Salary"))
+                .extracting(TxLine::date)
+                .containsExactlyInAnyOrder(LocalDate.of(2025, 12, 26), LocalDate.of(2026, 1, 28));
+        assertThat(withPayday.transactions()).filteredOn(t -> t.type() == TxType.EXPENSE)
+                .allSatisfy(t -> assertThat(t.date().getDayOfMonth()).isEqualTo(1));
+        assertThat(withPayday.months().get(1).income()).as("month totals unchanged").isEqualByComparingTo("37200.00");
+    }
+
+    @Test
     void readsFixedCostsEvenWhenRowsAreShifted() {
         LocalDate feb = LocalDate.of(2026, 2, 1);
         assertThat(tx(feb, "Car").category().code()).isEqualTo("CAR_PAYMENT");

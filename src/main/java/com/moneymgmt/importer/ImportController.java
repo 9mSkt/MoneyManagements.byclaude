@@ -25,10 +25,13 @@ public class ImportController {
 
     private final ImportBatchRepository batches;
     private final ImportService importService;
+    private final int payday;
 
-    public ImportController(ImportBatchRepository batches, ImportService importService) {
+    public ImportController(ImportBatchRepository batches, ImportService importService,
+                            @org.springframework.beans.factory.annotation.Value("${app.budget.payday:28}") int payday) {
         this.batches = batches;
         this.importService = importService;
+        this.payday = payday;
     }
 
     @GetMapping
@@ -46,7 +49,7 @@ public class ImportController {
         }
         ImportPlan plan;
         try (InputStream in = file.getInputStream()) {
-            plan = SheetParser.parse(in);
+            plan = SheetParser.parse(in, payday);
         } catch (Exception e) {
             // Log the type only: the message could contain cell content from the owner's sheet.
             log.warn("Sheet import could not be read: {}", e.getClass().getSimpleName());

@@ -97,6 +97,16 @@ public class StatsService {
     }
 
     /**
+     * The days whose income is the money for {@code month}: from last month's payday to the day before this
+     * month's payday ({from, to}). The whole calendar month when the payday rule is off.
+     */
+    public static LocalDate[] payPeriod(YearMonth month, int payday) {
+        LocalDate from = payDate(month.minusMonths(1), payday);
+        LocalDate next = payDate(month, payday);
+        return new LocalDate[] {from == null ? month.atDay(1) : from, next == null ? month.atEndOfMonth() : next.minusDays(1)};
+    }
+
+    /**
      * The day the salary is paid in a month: the payday (28th), or the last weekday before it when it falls
      * on a Saturday or Sunday. Null when the payday rule is off.
      */

@@ -374,8 +374,15 @@ class TransactionPagesTest extends AbstractWebTest {
     @Test
     void salaryOnPaydayIsTaggedForNextMonthAndIncentiveFollowsThePayPeriod() throws Exception {
         save("2031-10-28", "SALARY", "Sample salary", "30000");   // Tue 28 Oct 2031
+        save("2031-10-15", "SHOPPING", "Sample october shoes", "500");
+        // The salary of 28 Oct is November's money: it is listed (and counted) under November, not October.
         mvc.perform(get("/transactions").param("month", "2031-10").param("lang", "en"))
-                .andExpect(content().string(containsString("for November 2031")));
+                .andExpect(content().string(not(containsString("Sample salary"))))
+                .andExpect(content().string(containsString("Sample october shoes")));
+        mvc.perform(get("/transactions").param("month", "2031-11").param("lang", "en"))
+                .andExpect(content().string(containsString("Sample salary")))
+                .andExpect(content().string(containsString("for November 2031")))
+                .andExpect(content().string(containsString("฿30,000.00")));
         // November's incentive, paid with the salary on 28 Oct, belongs to November.
         mvc.perform(post("/transactions/incentive").with(csrf()).param("month", "2031-11")
                         .param("date", "2031-10-28").param("amount", "3000"))
