@@ -431,3 +431,11 @@ dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
 .scope legend { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; padding: 0; }
 .scope .check { margin: 6px 0; }
 .card-head .link-small { white-space: nowrap; }
+.plan-dates { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 0 0; font-size: 0.8rem; }
+.plan-dates div { display: flex; gap: 6px; }
+.plan-dates dt { color: var(--text-muted); }
+.plan-dates dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+.schedule .chip { min-width: 3.2em; justify-content: center; }
+.schedule li.s-paid .chip { background: color-mix(in srgb, var(--income) 18%, transparent); color: var(--income); }
+.schedule li.s-due .chip { background: color-mix(in srgb, var(--warning) 22%, transparent); color: var(--text); }
+.schedule li.s-upcoming .title { color: var(--text-muted); }

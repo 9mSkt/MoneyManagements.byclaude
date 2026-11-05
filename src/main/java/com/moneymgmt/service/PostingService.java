@@ -102,7 +102,7 @@ public class PostingService {
             count++;
         }
         for (Installment plan : plans.findAll()) {
-            if (plan.isFinished() || plan.getCategory() == null || first.isBefore(plan.getStartMonth())
+            if (plan.isFinished() || plan.getCategory() == null || !plan.hasPaymentIn(month)
                     || postedFrom(plan.getLastPostedMonth(), first)) {
                 continue;
             }
@@ -130,7 +130,7 @@ public class PostingService {
     @Transactional
     public void postPlan(Long id, YearMonth month) {
         plans.findWithCategoryById(id).ifPresent(plan -> {
-            if (!plan.isFinished() && plan.getCategory() != null && findPosted(plan, month) == null) {
+            if (plan.hasPaymentIn(month) && plan.getCategory() != null && findPosted(plan, month) == null) {
                 post(plan, month);
             }
         });
@@ -170,9 +170,9 @@ public class PostingService {
             if (posted == null && plan.getCategory() != null) {
                 posted = sameInMonth(plan.getCategory(), plan.getItem(), month);
             }
-            boolean running = !plan.isFinished() && !from.isBefore(plan.getStartMonth());
+            boolean running = plan.hasPaymentIn(month);
             if (posted != null || running) {
-                planRows.add(new PlanStatus(plan, posted, plan.getPaidCount() + 1));
+                planRows.add(new PlanStatus(plan, posted, plan.paymentNoIn(month)));
             }
         }
         return new MonthStatus(month, itemRows, planRows);
@@ -219,8 +219,9 @@ public class PostingService {
             if (due.isBefore(today)) {
                 due = month.plusMonths(1).atDay(1);
             }
-            if (!due.isAfter(until)) {
-                out.add(new Upcoming(true, plan.getItem(), (plan.getPaidCount() + 1) + "/" + plan.getMonths(), due,
+            YearMonth dueMonth = YearMonth.from(due);
+            if (!due.isAfter(until) && plan.hasPaymentIn(dueMonth)) {
+                out.add(new Upcoming(true, plan.getItem(), plan.paymentNoIn(dueMonth) + "/" + plan.getMonths(), due,
                         plan.getMonthlyAmount()));
             }
         }
@@ -263,15 +264,19 @@ public class PostingService {
         item.setLastPostedMonth(later(item.getLastPostedMonth(), month.atDay(1)));
     }
 
+    /**
+     * Posts the payment that falls in {@code month}. Its number comes from the month (payment 1 is in the first
+     * payment month), so numbers always match the schedule; months skipped before it count as paid.
+     */
     private void post(Installment plan, YearMonth month) {
-        int no = plan.getPaidCount() + 1;
+        int no = plan.paymentNoIn(month);
         Transaction t = new Transaction(month.atDay(1), TxType.EXPENSE, plan.getMonthlyAmount(), plan.getCategory(),
                 plan.getItem());
         t.setInstallment(plan);
         t.setInstallmentNo(no);
         t.setNote(no + "/" + plan.getMonths());
         transactions.save(t);
-        plan.setPaidCount(no);
+        plan.setPaidCount(Math.max(plan.getPaidCount(), no));
         plan.setLastPostedMonth(later(plan.getLastPostedMonth(), month.atDay(1)));
     }
 

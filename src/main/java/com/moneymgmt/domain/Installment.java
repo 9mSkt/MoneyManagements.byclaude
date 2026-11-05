@@ -100,6 +100,27 @@ public class Installment {
         return startMonth.plusMonths(Math.max(months, 1) - 1L);
     }
 
+    /** Month of payment {@code no} (payment 1 is in the start month). */
+    public LocalDate monthOfPayment(int no) {
+        return startMonth.plusMonths(Math.max(no, 1) - 1L);
+    }
+
+    /** Payment number that falls in a month (1 in the start month); below 1 or above {@link #getMonths()} = none. */
+    public int paymentNoIn(java.time.YearMonth month) {
+        return (int) java.time.temporal.ChronoUnit.MONTHS.between(java.time.YearMonth.from(startMonth), month) + 1;
+    }
+
+    /** True when the month has a payment of this plan (between the first and the last payment month). */
+    public boolean hasPaymentIn(java.time.YearMonth month) {
+        int no = paymentNoIn(month);
+        return no >= 1 && no <= months;
+    }
+
+    /** Month of the next payment, or null when paid off. */
+    public LocalDate getNextPaymentMonth() {
+        return isFinished() ? null : monthOfPayment(paidCount + 1);
+    }
+
     public boolean isFinished() {
         return paidCount >= months;
     }

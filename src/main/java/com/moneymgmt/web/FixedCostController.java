@@ -215,7 +215,41 @@ public class FixedCostController {
         model.addAttribute("form", f);
         model.addAttribute("errors", errors);
         model.addAttribute("existing", existing);
+        model.addAttribute("schedule", existing == null ? List.of() : schedule(existing));
         return "fixed/installment-form";
+    }
+
+    /**
+     * One row per payment. status: paid (an entry exists), counted (counted as paid but no entry in the app,
+     * e.g. paid before the app), due (this month or earlier, not paid yet), upcoming.
+     */
+    public record ScheduleRow(int no, java.time.LocalDate month, BigDecimal amount, Transaction entry, String status) {
+    }
+
+    private List<ScheduleRow> schedule(Installment plan) {
+        List<Transaction> paid = transactions.findByInstallmentOrderByDateAscIdAsc(plan);
+        java.time.LocalDate thisMonth = AppTime.thisMonth().atDay(1);
+        List<ScheduleRow> rows = new java.util.ArrayList<>();
+        for (int no = 1; no <= plan.getMonths(); no++) {
+            java.time.LocalDate month = plan.monthOfPayment(no);
+            final int n = no;
+            Transaction entry = paid.stream().filter(t -> t.getInstallmentNo() != null && t.getInstallmentNo() == n)
+                    .findFirst()
+                    .orElseGet(() -> paid.stream().filter(t -> t.getInstallmentNo() == null
+                            && java.time.YearMonth.from(t.getDate()).atDay(1).equals(month)).findFirst().orElse(null));
+            String status;
+            if (entry != null) {
+                status = "paid";
+            } else if (no <= plan.getPaidCount()) {
+                status = "counted";
+            } else if (!month.isAfter(thisMonth)) {
+                status = "due";
+            } else {
+                status = "upcoming";
+            }
+            rows.add(new ScheduleRow(no, month, entry != null ? entry.getAmount() : plan.getMonthlyAmount(), entry, status));
+        }
+        return rows;
     }
 
     /** Fields the browser sent in a wrong format (e.g. letters in "months") become form errors. */

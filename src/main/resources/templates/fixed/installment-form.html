@@ -80,6 +80,29 @@
         </form>
     </div>
 
+    <!-- Payment schedule: which month each payment falls in, and the entry that paid it -->
+    <div class="card" th:unless="${#lists.isEmpty(schedule)}">
+        <div class="card-head"><h2 th:text="#{inst.schedule}">Payment schedule</h2></div>
+        <p class="muted small" th:text="#{inst.scheduleNote}">Payment 1 falls in the first payment month.</p>
+        <ul class="list schedule">
+            <li th:each="r : ${schedule}" th:classappend="${'s-' + r.status}">
+                <span class="chip num" th:text="${r.no + '/' + existing.months}">1/3</span>
+                <div class="grow">
+                    <div class="title" th:text="${#temporals.format(r.month, 'MMMM yyyy', #locale)}">August 2026</div>
+                    <div class="sub">
+                        <span th:text="#{${'inst.status.' + r.status}}">Paid</span>
+                        <th:block th:if="${r.entry != null}"> ·
+                            <a th:href="@{/transactions/{id}/edit(id=${r.entry.id})}"
+                               th:text="${#temporals.format(r.entry.date, 'd MMM yyyy', #locale)}">1 Aug 2026</a>
+                        </th:block>
+                    </div>
+                </div>
+                <span class="amount" th:classappend="${r.status == 'paid'} ? 'expense' : 'muted'"
+                      th:text="${@fmt.baht(r.amount)}">฿0</span>
+            </li>
+        </ul>
+    </div>
+
     <form th:if="${form.id != null}" class="card danger-zone" th:action="@{/fixed-costs/installments/{id}/delete(id=${form.id})}"
           method="post" th:attr="data-confirm=#{inst.delete.confirm}">
         <div class="grow">

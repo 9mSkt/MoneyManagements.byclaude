@@ -143,11 +143,24 @@
                             <span><strong class="num" th:text="${p.paidCount + '/' + p.months}">3/10</strong>
                                 <span th:text="${p.finished} ? #{inst.finished} : #{inst.paid}">paid</span></span>
                             <span th:unless="${p.finished}" th:text="#{inst.remaining(${@fmt.baht(p.remainingDebt)})}">฿0 left</span>
-                            <span th:text="${#temporals.format(p.startMonth, 'MMM yy', #locale)} + ' – ' + ${#temporals.format(p.endMonth, 'MMM yy', #locale)}">Jan – Oct</span>
                             <span th:if="${p.interestPercent.signum() > 0}"
                                   th:text="#{inst.interestShort(${@fmt.percent(p.interestPercent)})}">0.69%/mo</span>
                             <span th:if="${p.interestPercent.signum() == 0}" th:text="#{inst.zero}">0%</span>
                         </div>
+                        <dl class="plan-dates">
+                            <div>
+                                <dt th:text="#{inst.firstPayment}">First payment</dt>
+                                <dd th:text="${#temporals.format(p.startMonth, 'MMM yyyy', #locale)} + ' · 1/' + ${p.months}">Aug 2026 · 1/3</dd>
+                            </div>
+                            <div th:unless="${p.finished}">
+                                <dt th:text="#{inst.nextPayment}">Next payment</dt>
+                                <dd th:text="${#temporals.format(p.nextPaymentMonth, 'MMM yyyy', #locale)} + ' · ' + ${p.paidCount + 1} + '/' + ${p.months}">Nov 2026 · 2/3</dd>
+                            </div>
+                            <div>
+                                <dt th:text="#{inst.lastPayment}">Last payment</dt>
+                                <dd th:text="${#temporals.format(p.endMonth, 'MMM yyyy', #locale)} + ' · ' + ${p.months} + '/' + ${p.months}">Oct 2026 · 3/3</dd>
+                            </div>
+                        </dl>
                     </div>
                 </li>
             </ul>

@@ -273,6 +273,17 @@ class TransactionPagesTest extends AbstractWebTest {
 
         mvc.perform(get("/transactions").param("month", "2031-11"))
                 .andExpect(content().string(containsString("3/3")));
+
+        // First payment month = the month the 1/3 entry was added; schedule lists each payment.
+        mvc.perform(get("/fixed-costs").param("lang", "en"))
+                .andExpect(content().string(containsString("Sep 2031 · 1/3")))
+                .andExpect(content().string(containsString("Nov 2031 · 3/3")));
+        mvc.perform(get("/fixed-costs/installments/{id}/edit", plan.getId()).param("lang", "en"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Payment schedule")))
+                .andExpect(content().string(containsString("September 2031")))
+                .andExpect(content().string(containsString("October 2031")))
+                .andExpect(content().string(containsString("20 Sep 2031")));
         Long first = in2031("Sample earbuds").stream().filter(t -> t.getInstallmentNo() == 1).findFirst()
                 .orElseThrow().getId();
         mvc.perform(get("/transactions/{id}/edit", first).param("lang", "en"))

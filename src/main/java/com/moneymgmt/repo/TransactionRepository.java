@@ -39,6 +39,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     long countByInstallment(Installment installment);
 
+    /** Payments of one installment plan, oldest first (the schedule on the plan page). */
+    List<Transaction> findByInstallmentOrderByDateAscIdAsc(Installment installment);
+
     /** Totals grouped by month, category and type (dashboard, budget, reports). */
     @Query("select new com.moneymgmt.repo.CategoryMonthTotal(extract(year from t.date), extract(month from t.date), "
             + "t.category.id, t.type, sum(t.amount)) from Transaction t where t.date between :from and :to "

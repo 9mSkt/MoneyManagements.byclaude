@@ -136,6 +136,30 @@ class PostingServiceTest extends AbstractWebTest {
     }
 
     @Test
+    void paymentNumberFollowsTheMonthEvenAfterAMissedMonth() {
+        // First payment entered in September; nothing posted in October; November is payment 3.
+        Installment phone = new Installment("Sample iPhone", Money.of("40000"), Money.of("2000"), 20,
+                LocalDate.of(2032, 9, 1));
+        phone.setCategory(cat("SHOPPING"));
+        phone.setPaidCount(1);
+        phone.setLastPostedMonth(LocalDate.of(2032, 9, 1));
+        plans.save(phone);
+
+        posting.postDue(LocalDate.of(2032, 11, 1));
+        assertThat(payments(phone, YearMonth.of(2032, 11))).singleElement()
+                .satisfies(t -> assertThat(t.getInstallmentNo()).isEqualTo(3));
+        assertThat(phone.getPaidCount()).isEqualTo(3);
+
+        posting.postPlan(phone.getId(), YearMonth.of(2032, 10));   // add the missed month by hand
+        assertThat(payments(phone, YearMonth.of(2032, 10))).singleElement()
+                .satisfies(t -> assertThat(t.getInstallmentNo()).isEqualTo(2));
+        assertThat(phone.getPaidCount()).isEqualTo(3);
+        assertThat(phone.getNextPaymentMonth()).isEqualTo(LocalDate.of(2032, 12, 1));
+        posting.postPlan(phone.getId(), YearMonth.of(2034, 9));    // after the last payment month: nothing
+        assertThat(payments(phone, YearMonth.of(2034, 9))).isEmpty();
+    }
+
+    @Test
     void deletingTheLatestPaymentLowersThePaidCount() {
         Installment tv = new Installment("Sample TV", Money.of("12000"), Money.of("1000"), 12,
                 LocalDate.of(2032, 1, 1));
