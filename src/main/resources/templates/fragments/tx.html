@@ -56,12 +56,25 @@
                autocomplete="off" inputmode="text" th:placeholder="#{tx.period.placeholder}"
                th:readonly="${f.linked}" th:disabled="${f.type.name() != 'EXPENSE'}">
         <div class="field-error" th:if="${err.containsKey('period')}" th:text="#{${err.get('period')}}">Error</div>
+        <!-- Credit card fee / interest for this payment (e.g. a month you paid only the minimum due) -->
+        <div class="fee-field" data-fee-field th:classappend="${err.containsKey('fee')} ? 'has-error'"
+             th:hidden="${!f.linked and #strings.isEmpty(f.period) and #strings.isEmpty(f.fee)}">
+            <label th:for="${p + '-fee'}" th:text="#{tx.fee}">Credit fee / interest (optional)</label>
+            <div class="money-input">
+                <span aria-hidden="true">฿</span>
+                <input class="input" th:id="${p + '-fee'}" name="fee" th:value="${f.fee}" inputmode="decimal"
+                       autocomplete="off" maxlength="20" placeholder="0.00">
+            </div>
+            <div class="field-error" th:if="${err.containsKey('fee')}" th:text="#{${err.get('fee')}}">Error</div>
+            <div class="hint" th:text="#{tx.fee.hint}">Added on top of this payment.</div>
+        </div>
         <!-- Live preview of the plan this entry will start (filled in by app.js as you type) -->
         <div class="period-preview" data-period-preview hidden th:unless="${f.linked}"
              th:attr="data-t-title=#{tx.period.pv.title},data-t-payments=#{tx.period.pv.payments},
                       data-t-first=#{tx.period.pv.first},data-t-this=#{tx.period.pv.this},
                       data-t-last=#{tx.period.pv.last},data-t-next=#{tx.period.pv.next},
-                      data-t-none=#{tx.period.pv.none},data-t-bad=#{tx.period.pv.bad}"></div>
+                      data-t-none=#{tx.period.pv.none},data-t-bad=#{tx.period.pv.bad},
+                      data-t-fee=#{tx.period.pv.fee}"></div>
         <div class="hint" th:text="${f.linked} ? #{tx.period.linked} : #{tx.period.hint}">Hint</div>
     </div>
 

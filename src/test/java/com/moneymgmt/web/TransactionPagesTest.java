@@ -250,7 +250,7 @@ class TransactionPagesTest extends AbstractWebTest {
 
     @Test
     void periodOnFirstPaymentStartsAPlanAndLaterMonthsArePosted() throws Exception {
-        mvc.perform(post("/transactions").with(csrf()).param("type", "EXPENSE").param("amount", "1,500")
+        mvc.perform(post("/transactions").with(csrf()).param("type", "EXPENSE").param("amount", "4,500")
                         .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-09-20")
                         .param("description", "Sample earbuds").param("period", " 1 / 3 "))
                 .andExpect(redirectedUrl("/transactions?month=2031-09"))
@@ -299,6 +299,49 @@ class TransactionPagesTest extends AbstractWebTest {
         mvc.perform(get("/transactions/{id}/edit", first).param("lang", "en"))
                 .andExpect(content().string(containsString("value=\"1/3\"")))
                 .andExpect(content().string(containsString("Part of an installment plan")));
+    }
+
+    @Test
+    void fullPriceIsSplitAndCreditFeeIsAddedToThePayment() throws Exception {
+        mvc.perform(post("/transactions").with(csrf()).param("amount", "1,000")
+                        .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-02-14")
+                        .param("description", "Sample headphones").param("period", "1/3").param("fee", "25"))
+                .andExpect(status().is3xxRedirection());
+        Installment plan = plans.findAll().stream().filter(p -> p.getItem().equals("Sample headphones")).findFirst()
+                .orElseThrow();
+        assertThat(plan.getFullPrice()).isEqualByComparingTo("1000");
+        assertThat(plan.getMonthlyAmount()).isEqualByComparingTo("333.33");
+        Transaction first = in2031("Sample headphones").get(0);
+        assertThat(first.getAmount()).isEqualByComparingTo("358.33");
+        assertThat(first.getFee()).isEqualByComparingTo("25");
+
+        // A later payment where only the minimum was paid: add the card fee on its edit page.
+        posting.postDue(LocalDate.of(2031, 3, 1));
+        Transaction second = in2031("Sample headphones").stream().filter(t -> t.getInstallmentNo() == 2)
+                .findFirst().orElseThrow();
+        mvc.perform(get("/transactions/{id}/edit", second.getId()).param("lang", "en"))
+                .andExpect(content().string(containsString("Credit fee / interest")));
+        mvc.perform(post("/transactions").with(csrf()).param("id", second.getId().toString())
+                        .param("amount", "333.33").param("fee", "41.20")
+                        .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-03-01")
+                        .param("description", "Sample headphones"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(transactions.findById(second.getId())).get().satisfies(t -> {
+            assertThat(t.getAmount()).isEqualByComparingTo("374.53");
+            assertThat(t.getFee()).isEqualByComparingTo("41.20");
+        });
+        mvc.perform(get("/transactions/{id}/edit", second.getId()))
+                .andExpect(content().string(containsString("value=\"333.33\"")))
+                .andExpect(content().string(containsString("value=\"41.20\"")));
+        mvc.perform(get("/transactions").param("month", "2031-03").param("lang", "en"))
+                .andExpect(content().string(containsString("incl. fee ฿41.20")));
+
+        // Bad fee is refused.
+        mvc.perform(post("/transactions").with(csrf()).param("amount", "900").param("fee", "abc")
+                        .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-02-14")
+                        .param("description", "Sample bad fee").param("period", "1/3").param("lang", "en"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Type the fee")));
     }
 
     @Test

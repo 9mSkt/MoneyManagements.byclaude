@@ -147,6 +147,12 @@
   function updatePeriodPreview(form) {
     var box = form.querySelector('[data-period-preview]');
     var input = form.querySelector('input[name="period"]');
+    var feeBox = form.querySelector('[data-fee-field]');
+    if (feeBox && input) {
+      // The fee box belongs to installment payments: show it once a period is typed (or the entry is a payment).
+      var feeInput = feeBox.querySelector('input');
+      feeBox.hidden = !(input.readOnly || input.value.trim() || (feeInput && feeInput.value.trim()));
+    }
     if (!box || !input) { return; }
     var text = input.value.trim();
     box.textContent = '';
@@ -167,9 +173,16 @@
     function monthOf(k) { return new Date(base.getFullYear(), base.getMonth() + (k - no), 1); }
     function label(k) { return monthFmt.format(monthOf(k)); }
 
+    // The amount typed is the full price: monthly payment = full price ÷ months (as the app saves it).
+    var monthly = Math.round(amount / count * 100) / 100;
+    var fee = num(form.querySelector('input[name="fee"]'));
     box.appendChild(el('div', 'pv-title', box.getAttribute('data-t-title')));
     box.appendChild(el('div', 'pv-line', fill(box.getAttribute('data-t-payments'),
-      [count, '฿' + moneyFmt.format(amount), '฿' + moneyFmt.format(amount * count)])));
+      [count, '฿' + moneyFmt.format(monthly), '฿' + moneyFmt.format(amount)])));
+    if (fee > 0) {
+      box.appendChild(el('div', 'pv-line pv-this', fill(box.getAttribute('data-t-fee'),
+        ['฿' + moneyFmt.format(monthly), '฿' + moneyFmt.format(fee), '฿' + moneyFmt.format(monthly + fee)])));
+    }
     var ul = el('ul', 'pv-list');
     ul.appendChild(el('li', null, fill(box.getAttribute('data-t-first'), [count, label(1)])));
     if (no > 1) { ul.appendChild(el('li', 'pv-this', fill(box.getAttribute('data-t-this'), [no, count, label(no)]))); }
@@ -189,7 +202,7 @@
   }
   document.addEventListener('input', function (e) {
     var form = e.target.closest && e.target.closest('[data-tx-form]');
-    if (form && /^(period|amount|date)$/.test(e.target.name || '')) { updatePeriodPreview(form); }
+    if (form && /^(period|amount|date|fee)$/.test(e.target.name || '')) { updatePeriodPreview(form); }
   });
   document.addEventListener('change', function (e) {
     var form = e.target.closest && e.target.closest('[data-tx-form]');

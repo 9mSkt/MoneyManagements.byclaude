@@ -139,6 +139,17 @@ public class TransactionController {
             period = TxForm.parsePeriod(f.getPeriod());
             if (period == null) {
                 errors.put("period", "tx.error.period");
+            } else if (amount != null && amount.signum() < 0) {
+                errors.put("amount", "tx.error.amount");
+            }
+        }
+        // Credit card fee / interest: only for installment payments (a new 1/X entry or a payment of a plan).
+        boolean installmentEntry = period != null || (existing != null && existing.getInstallment() != null);
+        java.math.BigDecimal fee = null;
+        if (installmentEntry && TxForm.trimToNull(f.getFee()) != null) {
+            fee = com.moneymgmt.util.Money.parse(f.getFee());
+            if (fee == null || fee.signum() < 0) {
+                errors.put("fee", "tx.error.fee");
             }
         }
         if (!errors.isEmpty()) {
@@ -155,10 +166,17 @@ public class TransactionController {
         t.setNote(TxForm.trimToNull(f.getNote()));
         t.setTags(TxForm.cleanTags(f.getTags()));
         if (period != null) {
-            service.saveAsInstallment(t, period[0], period[1]);
+            // The amount typed with a period is the full price; the app works out the monthly payment.
+            service.saveAsInstallment(t, amount, period[0], period[1], fee);
             posting.recheck();
             flash.addFlashAttribute("flash", "tx.savedInstallment");
             return "redirect:" + back(f.getReturnTo(), YearMonth.from(t.getDate()));
+        }
+        if (installmentEntry) {
+            // A payment of a plan: the amount is the payment itself, the fee is added on top.
+            boolean hasFee = fee != null && fee.signum() > 0;
+            t.setFee(hasFee ? com.moneymgmt.util.Money.scale(fee) : null);
+            t.setAmount(hasFee ? amount.add(fee) : amount);
         }
         service.save(t);
 

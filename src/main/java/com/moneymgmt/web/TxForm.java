@@ -23,6 +23,8 @@ public class TxForm {
     private String period;
     /** True when the transaction already belongs to an installment plan (period shown, not editable). */
     private boolean linked;
+    /** Credit card fee / interest paid with this installment payment (optional). */
+    private String fee;
 
     private static final java.util.regex.Pattern PERIOD =
             java.util.regex.Pattern.compile("^\\s*(\\d{1,3})\\s*/\\s*(\\d{1,3})\\s*$");
@@ -51,6 +53,10 @@ public class TxForm {
         f.description = t.getDescription();
         f.note = t.getNote();
         f.tags = t.getTags();
+        if (t.getFee() != null) {
+            f.fee = t.getFee().toPlainString();
+            f.amount = t.getAmountWithoutFee().toPlainString();
+        }
         if (t.getInstallment() != null) {
             f.linked = true;
             f.period = (t.getInstallmentNo() == null ? "?" : t.getInstallmentNo()) + "/" + t.getInstallment().getMonths();
@@ -102,4 +108,6 @@ public class TxForm {
     public String getPeriod() { return period; }
     public void setPeriod(String period) { this.period = period; }
     public boolean isLinked() { return linked; }
+    public String getFee() { return fee; }
+    public void setFee(String fee) { this.fee = fee; }
 }

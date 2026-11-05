@@ -116,18 +116,22 @@ public class TransactionService {
     }
 
     /**
-     * Saves a payment typed with a period such as "1/3" and starts an installment plan from it.
-     * The amount is this month's payment; the plan's full price is amount × months (0% interest; the owner can
-     * change it on the Fixed costs page). Payment {@code no} falls in this transaction's month, so the plan
-     * started {@code no − 1} months earlier, and the app posts the following payments on the 1st of each month.
+     * Saves a purchase typed with a period such as "1/3" and starts an installment plan from it.
+     * {@code fullPrice} is the whole price: the app works out the monthly payment (full price ÷ months, 0 %
+     * interest; the owner can change it on the plan page). This entry becomes payment {@code no}, whose amount
+     * is the monthly payment plus the optional credit card {@code fee}. Payment {@code no} falls in this entry's
+     * month, so the plan started {@code no − 1} months earlier; the app posts the rest on the 1st of each month.
      */
     @Transactional
-    public Installment saveAsInstallment(Transaction t, int no, int months) {
-        t.setAmount(Money.scale(t.getAmount()));
+    public Installment saveAsInstallment(Transaction t, java.math.BigDecimal fullPrice, int no, int months,
+                                         java.math.BigDecimal fee) {
+        java.math.BigDecimal monthly = Installment.monthlyCharge(Money.scale(fullPrice), months, java.math.BigDecimal.ZERO);
+        java.math.BigDecimal paidFee = fee == null || fee.signum() == 0 ? null : Money.scale(fee);
+        t.setAmount(paidFee == null ? monthly : monthly.add(paidFee));
+        t.setFee(paidFee);
         java.time.LocalDate month = t.getDate().withDayOfMonth(1);
         String item = t.getDescription() != null ? t.getDescription() : t.getCategory().getNameEn();
-        Installment plan = new Installment(item, Money.scale(t.getAmount().multiply(java.math.BigDecimal.valueOf(months))),
-                t.getAmount(), months, month.minusMonths(no - 1L));
+        Installment plan = new Installment(item, Money.scale(fullPrice), monthly, months, month.minusMonths(no - 1L));
         plan.setCategory(t.getCategory());
         plan.setPaidCount(no);
         plan.setLastPostedMonth(month);

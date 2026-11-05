@@ -457,3 +457,8 @@ dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
 .period-preview .pv-bad { color: var(--over); }
 .period-preview .pv-list { margin: 0; padding-left: 18px; }
 .period-preview .pv-this { font-weight: 600; }
+.fee-field { display: grid; gap: 6px; margin-top: 10px; }
+.fee-field[hidden] { display: none; }
+.fee-field label { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+.fee-field .money-input { max-width: 200px; }
+.fee-chip { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--text); }

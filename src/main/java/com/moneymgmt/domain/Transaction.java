@@ -53,6 +53,9 @@ public class Transaction {
     @Column(name = "incentive_percent")
     private BigDecimal incentivePercent;
 
+    /** Credit card fee / interest included in {@link #amount} (installment payments only); null = none. */
+    private BigDecimal fee;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "import_batch_id")
     private ImportBatch importBatch;
@@ -104,6 +107,11 @@ public class Transaction {
     public BigDecimal getKpiPercent() { return kpiPercent; }
     public void setKpiPercent(BigDecimal kpiPercent) { this.kpiPercent = kpiPercent; }
     public BigDecimal getIncentivePercent() { return incentivePercent; }
+    public BigDecimal getFee() { return fee; }
+    public void setFee(BigDecimal fee) { this.fee = fee; }
+
+    /** Amount without the fee (the installment payment itself). */
+    public BigDecimal getAmountWithoutFee() { return fee == null ? amount : amount.subtract(fee); }
     public void setIncentivePercent(BigDecimal incentivePercent) { this.incentivePercent = incentivePercent; }
     public ImportBatch getImportBatch() { return importBatch; }
     public void setImportBatch(ImportBatch importBatch) { this.importBatch = importBatch; }

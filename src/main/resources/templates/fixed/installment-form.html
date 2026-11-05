@@ -91,6 +91,7 @@
                     <div class="title" th:text="${#temporals.format(r.month, 'MMMM yyyy', #locale)}">August 2026</div>
                     <div class="sub">
                         <span th:text="#{${'inst.status.' + r.status}}">Paid</span>
+                        <span class="chip fee-chip" th:if="${r.entry != null and r.entry.fee != null}" th:text="#{tx.feeChip(${@fmt.baht(r.entry.fee)})}">incl. fee</span>
                         <th:block th:if="${r.entry != null}"> ·
                             <a th:href="@{/transactions/{id}/edit(id=${r.entry.id})}"
                                th:text="${#temporals.format(r.entry.date, 'd MMM yyyy', #locale)}">1 Aug 2026</a>
