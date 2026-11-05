@@ -42,11 +42,17 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** Payments of one installment plan, oldest first (the schedule on the plan page). */
     List<Transaction> findByInstallmentOrderByDateAscIdAsc(Installment installment);
 
-    /** Totals grouped by month, category and type (dashboard, budget, reports). */
+    /** Expense and transfer totals grouped by month, category and type (income is added up by day, see below). */
     @Query("select new com.moneymgmt.repo.CategoryMonthTotal(extract(year from t.date), extract(month from t.date), "
             + "t.category.id, t.type, sum(t.amount)) from Transaction t where t.date between :from and :to "
+            + "and t.type <> com.moneymgmt.domain.TxType.INCOME "
             + "group by extract(year from t.date), extract(month from t.date), t.category.id, t.type")
     List<CategoryMonthTotal> totalsByMonthAndCategory(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** Income per day and category (so income from payday on can count toward the next month). Rows: [LocalDate, Long categoryId, BigDecimal]. */
+    @Query("select t.date, t.category.id, sum(t.amount) from Transaction t where t.type = "
+            + "com.moneymgmt.domain.TxType.INCOME and t.date between :from and :to group by t.date, t.category.id")
+    List<Object[]> incomeByDayAndCategory(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
     /** Day-by-day spending without fixed costs, for the calendar heatmap. Rows: [LocalDate, BigDecimal]. */
     @Query("select t.date, sum(t.amount) from Transaction t join t.category c where t.type = "

@@ -125,6 +125,33 @@ class BudgetServiceTest extends AbstractWebTest {
     }
 
     @Test
+    void paydayIsThe28thOrTheWeekdayBefore() {
+        assertThat(StatsService.payDate(YearMonth.of(2026, 10), 28)).isEqualTo(LocalDate.of(2026, 10, 28)); // Wed
+        assertThat(StatsService.payDate(YearMonth.of(2026, 11), 28)).isEqualTo(LocalDate.of(2026, 11, 27)); // Sat → Fri
+        assertThat(StatsService.payDate(YearMonth.of(2027, 2), 28)).isEqualTo(LocalDate.of(2027, 2, 26));   // Sun → Fri
+        assertThat(StatsService.budgetMonth(LocalDate.of(2026, 10, 28), 28)).isEqualTo(YearMonth.of(2026, 11));
+        assertThat(StatsService.budgetMonth(LocalDate.of(2026, 10, 27), 28)).isEqualTo(YearMonth.of(2026, 10));
+        assertThat(StatsService.budgetMonth(LocalDate.of(2026, 11, 27), 28)).isEqualTo(YearMonth.of(2026, 12));
+        assertThat(StatsService.budgetMonth(LocalDate.of(2026, 11, 1), 28)).isEqualTo(YearMonth.of(2026, 11));
+        assertThat(StatsService.budgetMonth(LocalDate.of(2026, 10, 30), 0)).as("rule off").isEqualTo(YearMonth.of(2026, 10));
+    }
+
+    @Test
+    void salaryPaidOnPaydayIsNextMonthsBudget() {
+        // 28 Feb 2033 is a Monday: that salary is the money for March 2033.
+        var salary = categories.findByCode("SALARY").orElseThrow();
+        transactions.save(new Transaction(LocalDate.of(2033, 2, 28), salary.getType(), Money.of("30000"), salary, "Sample"));
+        tx(1, "RENT", "10000");
+        tx(5, "EAT_LIFESTYLE", "2000");
+        var march = budgets.forMonth(M);
+        assertThat(march.summary().income()).isEqualByComparingTo("30000");
+        assertThat(march.summary().base()).isEqualByComparingTo("20000");
+        assertThat(group(march.actual(), BudgetGroup.EAT).budget()).isEqualByComparingTo("8000");
+        assertThat(stats.summary(M.minusMonths(1)).income()).as("not in February").isEqualByComparingTo("0");
+        assertThat(budgets.overBudgetIds(M)).as("budget is there from the 1st").isEmpty();
+    }
+
+    @Test
     void statsGroupByMonthAndDay() {
         sampleMonth();
         tx(2, "SHOPPING", "250.50");

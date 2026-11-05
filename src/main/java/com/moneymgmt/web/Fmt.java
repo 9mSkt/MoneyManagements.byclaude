@@ -10,6 +10,21 @@ import org.springframework.stereotype.Component;
 @Component("fmt")
 public class Fmt {
 
+    private final int payday;
+
+    public Fmt(@org.springframework.beans.factory.annotation.Value("${app.budget.payday:28}") int payday) {
+        this.payday = payday;
+    }
+
+    /** For income paid on or after payday: the month it counts toward (next month); otherwise null. */
+    public java.time.YearMonth countsFor(Transaction t) {
+        if (t.getType() != TxType.INCOME) {
+            return null;
+        }
+        java.time.YearMonth m = com.moneymgmt.service.StatsService.budgetMonth(t.getDate(), payday);
+        return m.equals(java.time.YearMonth.from(t.getDate())) ? null : m;
+    }
+
     /** ฿12,345.00 (−฿500.00 for negatives). */
     public String baht(BigDecimal value) {
         if (value == null) {

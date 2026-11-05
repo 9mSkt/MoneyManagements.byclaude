@@ -60,7 +60,7 @@
             <div class="field" th:classappend="${errors.containsKey('date')} ? 'has-error'">
                 <label for="date" th:text="#{incentive.date}">Paid on</label>
                 <input class="input" type="date" id="date" name="date" th:value="*{date}" required
-                       th:min="${ym.atDay(1)}" th:max="${ym.atEndOfMonth()}">
+                       th:min="${period[0]}" th:max="${period[1]}">
                 <div class="field-error" th:if="${errors.containsKey('date')}" th:text="#{${errors.get('date')}}">Error</div>
             </div>
             <div class="field">
@@ -87,9 +87,9 @@
                     <th class="num" th:text="#{incentive.amount}">Amount</th>
                 </tr></thead>
                 <tbody>
-                <tr th:each="h : ${history}">
-                    <td><a th:href="@{/transactions/incentive(month=${#temporals.format(h.date, 'yyyy-MM')})}"
-                           th:text="${#temporals.format(h.date, 'MMM yyyy', #locale)}">Nov 2026</a></td>
+                <tr th:each="h : ${history}" th:with="hm=${@fmt.countsFor(h) ?: T(java.time.YearMonth).from(h.date)}">
+                    <td><a th:href="@{/transactions/incentive(month=${hm})}"
+                           th:text="${#temporals.format(hm, 'MMM yyyy', #locale)}">Nov 2026</a></td>
                     <td class="num" th:text="${@fmt.percent(h.kpiPercent)}">95%</td>
                     <td class="num" th:text="${@fmt.percent(h.incentivePercent)}">10%</td>
                     <td class="num amount income" th:text="${@fmt.baht(h.amount)}">฿0</td>

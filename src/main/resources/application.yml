@@ -41,3 +41,7 @@ app:
   security:
     max-failed-logins: 5
     lockout-minutes: 15
+  budget:
+    # Salary day. Income from that month's payday on (the 28th, or the last weekday before it when it falls on a
+    # weekend) counts toward the next month's budget and totals. 0 turns this off.
+    payday: 28

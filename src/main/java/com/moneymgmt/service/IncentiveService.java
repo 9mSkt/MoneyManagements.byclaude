@@ -37,10 +37,28 @@ public class IncentiveService {
 
     private final TransactionRepository transactions;
     private final CategoryRepository categories;
+    private final int payday;
 
-    public IncentiveService(TransactionRepository transactions, CategoryRepository categories) {
+    public IncentiveService(TransactionRepository transactions, CategoryRepository categories,
+                            @org.springframework.beans.factory.annotation.Value("${app.budget.payday:28}") int payday) {
         this.transactions = transactions;
         this.categories = categories;
+        this.payday = payday;
+    }
+
+    /**
+     * The days whose income is the money for {@code month}: from last month's payday to the day before this
+     * month's payday (the whole calendar month when the payday rule is off).
+     */
+    public LocalDate[] payPeriod(YearMonth month) {
+        LocalDate from = StatsService.payDate(month.minusMonths(1), payday);
+        LocalDate next = StatsService.payDate(month, payday);
+        return new LocalDate[] {from == null ? month.atDay(1) : from, next == null ? month.atEndOfMonth() : next.minusDays(1)};
+    }
+
+    /** The month an income dated {@code date} counts toward. */
+    public YearMonth monthOf(LocalDate date) {
+        return StatsService.budgetMonth(date, payday);
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +71,7 @@ public class IncentiveService {
     public List<Transaction> history(int months) {
         YearMonth now = com.moneymgmt.util.AppTime.thisMonth();
         List<Transaction> rows = new ArrayList<>(transactions.findByCategoryCodeAndDateBetweenOrderByDateAscIdAsc(
-                INCENTIVE, now.minusMonths(months - 1L).atDay(1), now.atEndOfMonth()));
+                INCENTIVE, payPeriod(now.minusMonths(months - 1L))[0], payPeriod(now)[1]));
         Collections.reverse(rows);
         return rows;
     }
@@ -89,8 +107,8 @@ public class IncentiveService {
     }
 
     private Transaction first(String code, YearMonth month) {
-        List<Transaction> rows = transactions.findByCategoryCodeAndDateBetweenOrderByDateAscIdAsc(code,
-                month.atDay(1), month.atEndOfMonth());
+        LocalDate[] p = payPeriod(month);
+        List<Transaction> rows = transactions.findByCategoryCodeAndDateBetweenOrderByDateAscIdAsc(code, p[0], p[1]);
         return rows.isEmpty() ? null : rows.get(0);
     }
 }

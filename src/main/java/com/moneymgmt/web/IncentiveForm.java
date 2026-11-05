@@ -50,7 +50,7 @@ public class IncentiveForm {
     }
 
     /** Field → message key for every problem found; empty when the form is fine. */
-    public Map<String, String> validate() {
+    public Map<String, String> validate(java.util.function.Function<LocalDate, YearMonth> monthOf) {
         Map<String, String> errors = new LinkedHashMap<>();
         YearMonth ym = AppTime.parseMonth(month);
         BigDecimal a = Money.parse(amount);
@@ -59,7 +59,7 @@ public class IncentiveForm {
         }
         if (date == null) {
             errors.put("date", "tx.error.date");
-        } else if (ym == null || !YearMonth.from(date).equals(ym)) {
+        } else if (ym == null || !monthOf.apply(date).equals(ym)) {
             errors.put("date", "incentive.error.dateMonth");
         }
         if (!percentOk(kpiPercent)) {
