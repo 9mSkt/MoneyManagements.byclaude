@@ -42,9 +42,12 @@ public class TransactionService {
     }
 
     private final TransactionRepository transactions;
+    private final com.moneymgmt.repo.InstallmentRepository installments;
 
-    public TransactionService(TransactionRepository transactions) {
+    public TransactionService(TransactionRepository transactions,
+                              com.moneymgmt.repo.InstallmentRepository installments) {
         this.transactions = transactions;
+        this.installments = installments;
     }
 
     @Transactional(readOnly = true)
@@ -110,6 +113,29 @@ public class TransactionService {
     public Transaction save(Transaction t) {
         t.setAmount(Money.scale(t.getAmount()));
         return transactions.save(t);
+    }
+
+    /**
+     * Saves a payment typed with a period such as "1/3" and starts an installment plan from it.
+     * The amount is this month's payment; the plan's full price is amount × months (0% interest; the owner can
+     * change it on the Fixed costs page). Payment {@code no} falls in this transaction's month, so the plan
+     * started {@code no − 1} months earlier, and the app posts the following payments on the 1st of each month.
+     */
+    @Transactional
+    public Installment saveAsInstallment(Transaction t, int no, int months) {
+        t.setAmount(Money.scale(t.getAmount()));
+        java.time.LocalDate month = t.getDate().withDayOfMonth(1);
+        String item = t.getDescription() != null ? t.getDescription() : t.getCategory().getNameEn();
+        Installment plan = new Installment(item, Money.scale(t.getAmount().multiply(java.math.BigDecimal.valueOf(months))),
+                t.getAmount(), months, month.minusMonths(no - 1L));
+        plan.setCategory(t.getCategory());
+        plan.setPaidCount(no);
+        plan.setLastPostedMonth(month);
+        installments.save(plan);
+        t.setInstallment(plan);
+        t.setInstallmentNo(no);
+        transactions.save(t);
+        return plan;
     }
 
     /**

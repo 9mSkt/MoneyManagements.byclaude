@@ -66,6 +66,12 @@
         if (last && sel.querySelector('option[value="' + last + '"]')) { sel.value = last; }
       }
     });
+    // Fields that only apply to one type (the installment period is for expenses).
+    form.querySelectorAll('[data-only-type]').forEach(function (box) {
+      var on = box.getAttribute('data-only-type') === type;
+      box.hidden = !on;
+      box.querySelectorAll('input').forEach(function (i) { i.disabled = !on; });
+    });
   }
 
   document.addEventListener('change', function (e) {

@@ -19,6 +19,27 @@ public class TxForm {
     private String note;
     private String tags;
     private String returnTo;
+    /** Installment period of this payment, e.g. "1/3"; empty = not an installment. */
+    private String period;
+    /** True when the transaction already belongs to an installment plan (period shown, not editable). */
+    private boolean linked;
+
+    private static final java.util.regex.Pattern PERIOD =
+            java.util.regex.Pattern.compile("^\\s*(\\d{1,3})\\s*/\\s*(\\d{1,3})\\s*$");
+
+    /** "2/10" → {2, 10}; null unless 1 ≤ payment ≤ months ≤ 120. */
+    public static int[] parsePeriod(String text) {
+        if (text == null) {
+            return null;
+        }
+        var m = PERIOD.matcher(text);
+        if (!m.matches()) {
+            return null;
+        }
+        int no = Integer.parseInt(m.group(1));
+        int months = Integer.parseInt(m.group(2));
+        return no >= 1 && no <= months && months <= 120 ? new int[] {no, months} : null;
+    }
 
     public static TxForm of(Transaction t) {
         TxForm f = new TxForm();
@@ -30,6 +51,10 @@ public class TxForm {
         f.description = t.getDescription();
         f.note = t.getNote();
         f.tags = t.getTags();
+        if (t.getInstallment() != null) {
+            f.linked = true;
+            f.period = (t.getInstallmentNo() == null ? "?" : t.getInstallmentNo()) + "/" + t.getInstallment().getMonths();
+        }
         return f;
     }
 
@@ -74,4 +99,7 @@ public class TxForm {
     public void setTags(String tags) { this.tags = tags; }
     public String getReturnTo() { return returnTo; }
     public void setReturnTo(String returnTo) { this.returnTo = returnTo; }
+    public String getPeriod() { return period; }
+    public void setPeriod(String period) { this.period = period; }
+    public boolean isLinked() { return linked; }
 }

@@ -48,6 +48,17 @@
         </div>
     </div>
 
+    <!-- Installment period, expenses only: "1/3" on the first payment starts a plan; later months are posted by the app. -->
+    <div class="field" data-only-type="EXPENSE" th:hidden="${f.type.name() != 'EXPENSE'}"
+         th:classappend="${err.containsKey('period')} ? 'has-error'">
+        <label th:for="${p + '-period'}" th:text="#{tx.period}">Installment (optional)</label>
+        <input class="input period-input" th:id="${p + '-period'}" name="period" th:value="${f.period}" maxlength="7"
+               autocomplete="off" inputmode="text" th:placeholder="#{tx.period.placeholder}"
+               th:readonly="${f.linked}" th:disabled="${f.type.name() != 'EXPENSE'}">
+        <div class="field-error" th:if="${err.containsKey('period')}" th:text="#{${err.get('period')}}">Error</div>
+        <div class="hint" th:text="${f.linked} ? #{tx.period.linked} : #{tx.period.hint}">Hint</div>
+    </div>
+
     <details class="more-fields" th:open="${f.note != null or f.tags != null}">
         <summary th:text="#{tx.more}">Note and tags</summary>
         <div class="field">

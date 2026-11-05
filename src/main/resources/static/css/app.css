@@ -364,3 +364,6 @@ dialog.sheet { max-height: calc(100dvh - 24px); overflow-y: auto; }
 .plan-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
 /* Phone: the top bar hides its title, so show the page title above the content (must come after .page-title). */
 @media (max-width: 768px) { .page-title { display: block; } }
+.hint { color: var(--text-muted); font-size: 0.8rem; }
+.period-input { max-width: 160px; font-variant-numeric: tabular-nums; }
+.period-input[readonly] { background: var(--surface-2); }

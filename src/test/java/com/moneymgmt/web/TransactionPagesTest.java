@@ -246,6 +246,67 @@ class TransactionPagesTest extends AbstractWebTest {
         assertThat(transactions.findById(posted.getId())).as("posted entry stays").isPresent();
     }
 
+    @Autowired com.moneymgmt.service.PostingService posting;
+
+    @Test
+    void periodOnFirstPaymentStartsAPlanAndLaterMonthsArePosted() throws Exception {
+        mvc.perform(post("/transactions").with(csrf()).param("type", "EXPENSE").param("amount", "1,500")
+                        .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-09-20")
+                        .param("description", "Sample earbuds").param("period", " 1 / 3 "))
+                .andExpect(redirectedUrl("/transactions?month=2031-09"))
+                .andExpect(flash().attribute("flash", "tx.savedInstallment"));
+
+        Installment plan = plans.findAll().stream().filter(p -> p.getItem().equals("Sample earbuds")).findFirst()
+                .orElseThrow();
+        assertThat(plan.getMonths()).isEqualTo(3);
+        assertThat(plan.getPaidCount()).isEqualTo(1);
+        assertThat(plan.getMonthlyAmount()).isEqualByComparingTo("1500");
+        assertThat(plan.getFullPrice()).isEqualByComparingTo("4500");
+        assertThat(plan.getStartMonth()).isEqualTo(LocalDate.of(2031, 9, 1));
+
+        posting.postDue(LocalDate.of(2031, 9, 25));   // same month: nothing new
+        posting.postDue(LocalDate.of(2031, 10, 1));
+        posting.postDue(LocalDate.of(2031, 11, 1));
+        posting.postDue(LocalDate.of(2031, 12, 1));   // paid off: nothing more
+        assertThat(in2031("Sample earbuds")).extracting(Transaction::getInstallmentNo)
+                .containsExactlyInAnyOrder(1, 2, 3);
+
+        mvc.perform(get("/transactions").param("month", "2031-11"))
+                .andExpect(content().string(containsString("3/3")));
+        Long first = in2031("Sample earbuds").stream().filter(t -> t.getInstallmentNo() == 1).findFirst()
+                .orElseThrow().getId();
+        mvc.perform(get("/transactions/{id}/edit", first).param("lang", "en"))
+                .andExpect(content().string(containsString("value=\"1/3\"")))
+                .andExpect(content().string(containsString("Part of an installment plan")));
+    }
+
+    @Test
+    void periodStartingMidPlanAndBadPeriods() throws Exception {
+        mvc.perform(post("/transactions").with(csrf()).param("amount", "800")
+                        .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-05-03")
+                        .param("description", "Sample sofa").param("period", "3/4"))
+                .andExpect(status().is3xxRedirection());
+        Installment sofa = plans.findAll().stream().filter(p -> p.getItem().equals("Sample sofa")).findFirst()
+                .orElseThrow();
+        assertThat(sofa.getStartMonth()).isEqualTo(LocalDate.of(2031, 3, 1));
+        assertThat(sofa.getPaidCount()).isEqualTo(3);
+
+        for (String bad : List.of("4/3", "0/3", "abc", "1/200")) {
+            mvc.perform(post("/transactions").with(csrf()).param("amount", "100")
+                            .param("categoryId", catId("SHOPPING").toString()).param("date", "2031-05-03")
+                            .param("description", "Sample bad period").param("period", bad).param("lang", "en"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("payment number / number of months")));
+        }
+        assertThat(in2031("Sample bad period")).isEmpty();
+
+        // Income ignores the period field.
+        mvc.perform(post("/transactions").with(csrf()).param("amount", "100")
+                        .param("categoryId", catId("OTHER_INCOME").toString()).param("date", "2031-05-03")
+                        .param("description", "Sample income").param("period", "1/3"))
+                .andExpect(flash().attribute("flash", "tx.saved"));
+    }
+
     @Test
     void quickAddDrawerIsOnEveryPageInBothLanguages() throws Exception {
         mvc.perform(get("/").param("lang", "th"))

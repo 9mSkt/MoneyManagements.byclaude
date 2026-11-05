@@ -112,6 +112,16 @@ public class TransactionController {
         if (f.getId() != null) {
             existing = transactions.findWithDetailsById(f.getId()).orElseThrow(TransactionController::notFound);
         }
+        // "1/3" starts an installment plan from this payment (expenses only, and not if already linked to one).
+        int[] period = null;
+        boolean canStartPlan = category != null && category.getType() == TxType.EXPENSE
+                && (existing == null || existing.getInstallment() == null);
+        if (canStartPlan && TxForm.trimToNull(f.getPeriod()) != null) {
+            period = TxForm.parsePeriod(f.getPeriod());
+            if (period == null) {
+                errors.put("period", "tx.error.period");
+            }
+        }
         if (!errors.isEmpty()) {
             return form(f, errors, existing, model);
         }
@@ -125,6 +135,12 @@ public class TransactionController {
         t.setDescription(TxForm.trimToNull(f.getDescription()));
         t.setNote(TxForm.trimToNull(f.getNote()));
         t.setTags(TxForm.cleanTags(f.getTags()));
+        if (period != null) {
+            service.saveAsInstallment(t, period[0], period[1]);
+            posting.recheck();
+            flash.addFlashAttribute("flash", "tx.savedInstallment");
+            return "redirect:" + back(f.getReturnTo(), YearMonth.from(t.getDate()));
+        }
         service.save(t);
 
         flash.addFlashAttribute("flash", existing != null ? "tx.updated" : "tx.saved");
