@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{tax.edit.title(${year})}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="#{tax.edit.title(${year})}">My tax numbers 2026</h2>
+            <a class="link-small" th:href="@{/tax(year=${year})}" th:text="#{tax.back}">Back</a>
+        </div>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+        <p class="muted small" th:unless="${p.saved}" th:text="#{tax.edit.fromLastYear(${year - 1})}">Starts from last year.</p>
+        <form th:action="@{/tax/{y}(y=${year})}" method="post">
+            <h3 class="sub-head" th:text="#{tax.edit.estimates}">Estimates for the rest of the year</h3>
+            <th:block th:replace="~{:: money('salaryEstimate', #{tax.edit.salary}, #{tax.edit.salary.hint})}"/>
+            <th:block th:replace="~{:: money('bonusExpected', #{tax.edit.bonus}, #{tax.edit.bonus.hint(${@fmt.baht(p.bonusRecorded)})})}"/>
+            <th:block th:replace="~{:: money('otherExpected', #{tax.edit.other}, #{tax.edit.other.hint})}"/>
+
+            <h3 class="sub-head" th:text="#{tax.edit.deductions}">Deductions</h3>
+            <ul class="info-list">
+                <li th:text="#{tax.edit.auto1}">Expense and personal allowances are worked out for you.</li>
+                <li th:text="#{tax.edit.auto2}">Social security and PVD come from your fixed costs.</li>
+            </ul>
+            <th:block th:each="code : ${typed}">
+                <th:block th:replace="~{:: money(${'d_' + code}, #{${'tax.d.' + code}}, #{${'tax.dh.' + code}})}"/>
+            </th:block>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/tax(year=${year})}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div th:fragment="money(name, label, hint)" class="field" th:classappend="${errors.containsKey(name)} ? 'has-error'">
+    <label th:for="${name}" th:text="${label}">Label</label>
+    <div class="money-input"><span aria-hidden="true">฿</span>
+        <input class="input" th:id="${name}" th:name="${name}" inputmode="decimal" autocomplete="off" maxlength="16"
+               placeholder="0" th:value="${values[name]}"></div>
+    <div class="hint" th:text="${hint}">Hint</div>
+    <div class="field-error" th:if="${errors.containsKey(name)}" th:text="#{${errors.get(name)}}">Error</div>
+</div>
+</body>
+</html>

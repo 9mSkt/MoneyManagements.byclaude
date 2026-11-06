@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.tax}, ~{::content}, ~{::scripts})}">
+<body>
+<section th:fragment="content" class="stack">
+    <div class="page-tools">
+        <div class="month-nav">
+            <a class="icon-btn" th:href="@{/tax(year=${year - 1})}" th:attr="aria-label=#{tax.prevYear}">‹</a>
+            <span class="month-label" th:text="#{tax.yearTitle(${year}, ${year + 543})}">Tax year 2026</span>
+            <a class="icon-btn" th:href="@{/tax(year=${year + 1})}" th:attr="aria-label=#{tax.nextYear}">›</a>
+            <a class="link-small" th:if="${year != thisYear}" th:href="@{/tax}" th:text="#{tax.thisYear}">This year</a>
+        </div>
+        <div class="actions">
+            <a class="btn secondary small-btn" th:href="@{/tax/brackets(year=${year})}" th:text="#{tax.brackets.edit}">Brackets</a>
+            <a class="btn small-btn" th:href="@{/tax/{y}/edit(y=${year})}" th:text="#{tax.editNumbers}">Edit my numbers</a>
+        </div>
+    </div>
+
+    <div class="notice" th:unless="${p.hasIncome()}">
+        <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#info}"/></svg>
+        <span th:text="#{tax.noIncome(${year})}">No income recorded for this year yet.</span>
+    </div>
+
+    <div class="grid kpis">
+        <div class="card kpi">
+            <div class="bar-accent income"></div>
+            <div class="label" th:text="#{tax.kpi.income}">Income for the year</div>
+            <div class="value amount income" th:text="${@fmt.baht(r.income)}">฿0</div>
+            <div class="kpi-help" th:text="${p.anyEstimate()} ? #{tax.kpi.income.est} : #{tax.kpi.income.help}">Recorded</div>
+        </div>
+        <div class="card kpi">
+            <div class="bar-accent primary"></div>
+            <div class="label" th:text="#{tax.kpi.deductions}">Deductions</div>
+            <div class="value amount" th:text="${@fmt.baht(r.totalDeductions)}">฿0</div>
+            <div class="kpi-help" th:text="#{tax.kpi.deductions.help}">Allowed by law</div>
+        </div>
+        <div class="card kpi">
+            <div class="bar-accent primary"></div>
+            <div class="label" th:text="#{tax.kpi.net}">Taxable income</div>
+            <div class="value amount" th:text="${@fmt.baht(r.net)}">฿0</div>
+            <div class="kpi-help" th:text="#{tax.kpi.net.help(${@fmt.percent(r.marginalRate)})}">Top bracket</div>
+        </div>
+        <div class="card kpi">
+            <div class="bar-accent warning"></div>
+            <div class="label" th:text="#{tax.kpi.tax}">Tax for the year</div>
+            <div class="value amount warning-text" th:text="${@fmt.baht(r.tax)}">฿0</div>
+            <div class="kpi-help" th:text="#{tax.kpi.tax.help(${@fmt.percent(r.effectiveRate)})}">of income</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{tax.pay.title(${year + 1})}">Paying the tax</h2></div>
+        <dl class="facts">
+            <div><dt th:text="#{tax.pay.due}">Tax for the year</dt>
+                <dd class="amount" th:text="${@fmt.baht(r.tax)}">฿0</dd></div>
+            <div><dt th:text="#{tax.pay.paid(${year + 1})}">Paid</dt>
+                <dd class="amount" th:text="${@fmt.baht(p.paid)}">฿0</dd></div>
+            <div th:if="${p.toPay.signum() >= 0}"><dt th:text="#{tax.pay.left}">Still to pay</dt>
+                <dd class="amount warning-text" th:text="${@fmt.baht(p.toPay)}">฿0</dd></div>
+            <div th:if="${p.toPay.signum() < 0}"><dt th:text="#{tax.pay.over}">Paid more than the plan</dt>
+                <dd class="amount income" th:text="${@fmt.baht(p.toPay.negate())}">฿0</dd></div>
+            <div th:if="${p.setAsidePerMonth != null}"><dt th:text="#{tax.pay.setAside(${p.setAsideMonths}, ${year + 1})}">Set aside</dt>
+                <dd class="amount" th:text="#{tax.pay.perMonth(${@fmt.baht(p.setAsidePerMonth)})}">฿0 a month</dd></div>
+        </dl>
+        <p class="muted small explain" th:text="#{tax.pay.note(${year}, ${year + 1})}">File and pay in March–April.</p>
+    </div>
+
+    <div class="grid two-even">
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{tax.income.title}">Income</h2></div>
+            <ul class="list tax-lines">
+                <li th:each="l : ${p.income}">
+                    <div class="grow">
+                        <div class="title" th:text="${l.category != null} ? ${l.category.name(#locale)} : #{tax.income.otherExpected}">Salary</div>
+                        <div class="sub" th:if="${l.estimate.signum() > 0}">
+                            <span th:if="${l.estimatedMonths > 0}"
+                                  th:text="#{tax.income.estMonths(${@fmt.baht(l.recorded)}, ${l.estimatedMonths}, ${@fmt.baht(l.perMonth)})}">recorded + est</span>
+                            <span th:if="${l.estimatedMonths == 0 and l.category != null and l.category.code == 'BONUS'}"
+                                  th:text="#{tax.income.bonusStill(${@fmt.baht(l.recorded)}, ${@fmt.baht(l.estimate)})}">bonus</span>
+                            <span th:if="${l.estimatedMonths == 0 and (l.category == null or l.category.code != 'BONUS')}"
+                                  th:text="#{tax.income.expected(${@fmt.baht(l.recorded)}, ${@fmt.baht(l.estimate)})}">other</span>
+                        </div>
+                        <div class="sub" th:unless="${l.estimate.signum() > 0}" th:text="#{tax.income.recorded}">Recorded</div>
+                    </div>
+                    <div class="right amount" th:text="${@fmt.baht(l.total())}">฿0</div>
+                </li>
+                <li class="total-line">
+                    <div class="grow title" th:text="#{tax.income.total}">Total</div>
+                    <div class="right amount income" th:text="${@fmt.baht(r.income)}">฿0</div>
+                </li>
+            </ul>
+            <p class="muted small explain" th:text="#{tax.income.note}">All income counts as employment income.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2 th:text="#{tax.ded.title}">Deductions</h2>
+                <a class="link-small" th:href="@{/tax/{y}/edit(y=${year})}" th:text="#{budget.edit}">Edit</a></div>
+            <ul class="list tax-lines">
+                <li th:each="d : ${r.deductions}" th:if="${d.claimed.signum() > 0 or d.code == 'RMF' or d.code == 'THAI_ESG'}"
+                    th:classappend="${d.claimed.signum() == 0} ? 'zero'">
+                    <div class="grow">
+                        <div class="title" th:text="#{${'tax.d.' + d.code}}">Expense</div>
+                        <div class="sub">
+                            <span th:if="${d.code == 'SOCIAL_SECURITY' and p.socialSecurity.estimate.signum() > 0}"
+                                  th:text="#{tax.ded.paidEst(${@fmt.baht(p.socialSecurity.recorded)}, ${p.socialSecurity.estimatedMonths}, ${@fmt.baht(p.socialSecurity.perMonth)})}">recorded + est</span>
+                            <span th:if="${d.code == 'PVD' and p.pvd.estimate.signum() > 0}"
+                                  th:text="#{tax.ded.paidEst(${@fmt.baht(p.pvd.recorded)}, ${p.pvd.estimatedMonths}, ${@fmt.baht(p.pvd.perMonth)})}">recorded + est</span>
+                            <span th:if="${d.capped() and d.code != 'EXPENSE'}" class="warning-text"
+                                  th:text="#{tax.ded.capped(${@fmt.baht(d.claimed)}, ${@fmt.baht(d.limit)})}">limit</span>
+                            <span th:unless="${(d.capped() and d.code != 'EXPENSE') or (d.code == 'SOCIAL_SECURITY' and p.socialSecurity.estimate.signum() > 0) or (d.code == 'PVD' and p.pvd.estimate.signum() > 0)}"
+                                  th:text="#{${'tax.dh.' + d.code}}">hint</span>
+                        </div>
+                    </div>
+                    <div class="right amount" th:text="${@fmt.baht(d.allowed)}">฿0</div>
+                </li>
+                <li class="total-line">
+                    <div class="grow title" th:text="#{tax.ded.total}">Total</div>
+                    <div class="right amount" th:text="${@fmt.baht(r.totalDeductions)}">฿0</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card" id="tax-chart" th:attr="data-src=@{/api/tax/chart(year=${year})}">
+        <div class="card-head"><h2 th:text="#{tax.br.title}">Where your income falls</h2></div>
+        <p class="muted small explain" th:text="#{tax.br.intro(${@fmt.baht(r.net)}, ${@fmt.percent(r.marginalRate)})}">intro</p>
+        <div id="chart-tax" class="chart short"></div>
+        <div class="table-wrap">
+            <table class="data br-table">
+                <thead><tr>
+                    <th th:text="#{tax.br.rate} + ' · ' + #{tax.br.range}">Rate · Net income</th>
+                    <th class="num" th:text="#{tax.br.yours}">Yours</th>
+                    <th class="num" th:text="#{tax.br.tax}">Tax</th>
+                </tr></thead>
+                <tbody>
+                <tr th:each="l : ${r.brackets}" th:classappend="${l.current} ? 'current-row'">
+                    <td><span class="br-rate" th:text="${@fmt.percent(l.bracket.rate)}">5%</span>
+                        <span class="br-range" th:text="${l.bracket.to != null} ? ${@fmt.number(l.bracket.from, 0)} + ' – ' + ${@fmt.number(l.bracket.to, 0)} : ${@fmt.number(l.bracket.from, 0)} + '+'">0 – 150,000</span></td>
+                    <td class="num amount" th:text="${l.portion.signum() > 0} ? ${@fmt.baht(l.portion)} : '—'">฿0</td>
+                    <td class="num amount" th:text="${l.tax.signum() > 0} ? ${@fmt.baht(l.tax)} : '—'">฿0</td>
+                </tr>
+                </tbody>
+                <tfoot><tr>
+                    <th colspan="2" th:text="#{tax.br.total}">Total tax</th>
+                    <th class="num amount" th:text="${@fmt.baht(r.tax)}">฿0</th>
+                </tr></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" id="tax-save">
+        <div class="card-head"><h2 th:text="#{tax.save.title}">Save tax with RMF / ThaiESG</h2></div>
+        <dl class="facts">
+            <div><dt th:text="#{tax.save.rmfRoom}">RMF you can still buy</dt>
+                <dd class="amount investment" th:text="${@fmt.baht(r.rmfRoom)}">฿0</dd></div>
+            <div><dt th:text="#{tax.save.esgRoom}">ThaiESG you can still buy</dt>
+                <dd class="amount investment" th:text="${@fmt.baht(r.esgRoom)}">฿0</dd></div>
+            <div><dt th:text="#{tax.save.perThousand}">Each ฿1,000 saves</dt>
+                <dd class="amount" th:text="${@fmt.baht(r.marginalRate * 10)}">฿0</dd></div>
+        </dl>
+        <ul class="info-list tips" th:if="${p.lowerBracket != null or p.fullRoom != null}">
+            <li th:if="${p.lowerBracket != null}"
+                th:text="#{tax.save.lower(${@fmt.baht(p.lowerBracket.amount)}, ${@fmt.percent(p.lowerBracket.newRate)}, ${@fmt.baht(p.lowerBracket.saving)})}">Buy to drop a bracket</li>
+            <li th:if="${p.fullRoom != null}"
+                th:text="#{tax.save.full(${@fmt.baht(p.fullRoom.amount)}, ${@fmt.baht(p.fullRoom.saving)})}">Buy the full limit</li>
+        </ul>
+
+        <form class="whatif-form" th:attr="hx-get=@{/tax/whatif}" hx-target="#whatif" hx-swap="outerHTML"
+              hx-trigger="input delay:400ms, submit" onsubmit="return false">
+            <input type="hidden" name="year" th:value="${year}">
+            <div class="field">
+                <label for="wi-rmf" th:text="#{tax.save.extraRmf}">Buy more RMF</label>
+                <div class="money-input"><span aria-hidden="true">฿</span>
+                    <input class="input" id="wi-rmf" name="rmf" inputmode="decimal" autocomplete="off" maxlength="14" placeholder="0"></div>
+            </div>
+            <div class="field">
+                <label for="wi-esg" th:text="#{tax.save.extraEsg}">Buy more ThaiESG</label>
+                <div class="money-input"><span aria-hidden="true">฿</span>
+                    <input class="input" id="wi-esg" name="esg" inputmode="decimal" autocomplete="off" maxlength="14" placeholder="0"></div>
+            </div>
+            <div class="field">
+                <label for="wi-save" th:text="#{tax.save.target}">Or: tax I want to save</label>
+                <div class="money-input"><span aria-hidden="true">฿</span>
+                    <input class="input" id="wi-save" name="save" inputmode="decimal" autocomplete="off" maxlength="14" placeholder="0"></div>
+            </div>
+        </form>
+
+        <div id="whatif" class="whatif-result" th:fragment="whatif">
+            <p class="muted small" th:if="${after == null and target == null}" th:text="#{tax.save.typeHint}">Type an amount.</p>
+            <div th:if="${after != null}" class="whatif-box">
+                <div class="whatif-main" th:text="#{tax.save.result(${@fmt.baht(after.tax)}, ${@fmt.baht(saving)})}">Tax would be</div>
+                <div class="muted small" th:text="#{tax.save.resultRate(${@fmt.baht(after.net)}, ${@fmt.percent(after.marginalRate)})}">net</div>
+                <div class="warning-text small" th:if="${overRmf.signum() > 0}" th:text="#{tax.save.overRmf(${@fmt.baht(overRmf)})}">over</div>
+                <div class="warning-text small" th:if="${overEsg.signum() > 0}" th:text="#{tax.save.overEsg(${@fmt.baht(overEsg)})}">over</div>
+            </div>
+            <div th:if="${target != null}" class="whatif-box">
+                <div class="whatif-main" th:if="${need != null}"
+                     th:text="#{tax.save.need(${@fmt.baht(target)}, ${@fmt.baht(need.amount)})}">Buy</div>
+                <div class="muted small" th:if="${need != null and need.esg.signum() > 0}"
+                     th:text="#{tax.save.needSplit(${@fmt.baht(need.rmf)}, ${@fmt.baht(need.esg)})}">split</div>
+                <div class="warning-text" th:if="${need == null}"
+                     th:text="#{tax.save.cannot(${@fmt.baht(target)}, ${@fmt.baht(p.fullRoom != null ? p.fullRoom.saving : 0)})}">Cannot</div>
+            </div>
+        </div>
+        <p class="muted small" th:text="#{tax.save.rules}">RMF hold rules.</p>
+    </div>
+
+    <p class="muted small" th:text="#{tax.lawNote}">Limits follow the 2025–2026 rules.</p>
+</section>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/echarts-5.6.0.min.js}"></script>
+    <script th:src="@{/js/charts.js}"></script>
+    <script th:src="@{/js/tax.js}"></script>
+</th:block>
+</body>
+</html>

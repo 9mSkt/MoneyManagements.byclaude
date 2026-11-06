@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{tax.brackets.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="#{tax.brackets.title}">Tax brackets</h2>
+            <a class="link-small" th:href="@{/tax(year=${year})}" th:text="#{tax.back}">Back</a>
+        </div>
+        <p class="muted small" th:text="#{tax.brackets.intro}">Change only if the law changes.</p>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+        <form th:action="@{/tax/brackets(year=${year})}" method="post">
+            <div class="bracket-head muted small">
+                <span th:text="#{tax.brackets.upTo}">Net income up to</span>
+                <span th:text="#{tax.brackets.rate}">Rate</span>
+            </div>
+            <div class="bracket-row" th:each="i : ${#numbers.sequence(0, count - 1)}"
+                 th:with="last=${i == count - 1}, toKey=${'to_' + i}, rateKey=${'rate_' + i}">
+                <div class="field" th:classappend="${errors.containsKey(toKey)} ? 'has-error'">
+                    <label class="sr-only" th:for="${toKey}" th:text="#{tax.brackets.upTo}">Up to</label>
+                    <input class="input" th:if="${!last}" th:id="${toKey}" th:name="${toKey}" inputmode="decimal"
+                           autocomplete="off" maxlength="16" th:value="${values[toKey]}">
+                    <input class="input" th:if="${last}" th:id="${toKey}" disabled th:value="#{tax.brackets.noLimit}">
+                    <div class="field-error" th:if="${errors.containsKey(toKey)}" th:text="#{${errors.get(toKey)}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey(rateKey)} ? 'has-error'">
+                    <label class="sr-only" th:for="${rateKey}" th:text="#{tax.brackets.rate}">Rate</label>
+                    <div class="money-input suffix">
+                        <input class="input" th:id="${rateKey}" th:name="${rateKey}" inputmode="decimal" autocomplete="off"
+                               maxlength="6" th:value="${values[rateKey]}"><span aria-hidden="true">%</span></div>
+                    <div class="field-error" th:if="${errors.containsKey(rateKey)}" th:text="#{${errors.get(rateKey)}}">Error</div>
+                </div>
+            </div>
+            <p class="muted small" th:text="#{tax.brackets.howTo}">Each bracket starts where the one above ends.</p>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/tax(year=${year})}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+</body>
+</html>
