@@ -40,6 +40,8 @@ app:
   password-hash: ${APP_PASSWORD_HASH:}
   # Optional two-step sign-in (authenticator app). Create a secret with: totp-secret
   totp-secret: ${APP_TOTP_SECRET:}
+  # Optional: secret key for the yearly Google Drive export script. Create one with: export-token
+  export-token: ${EXPORT_TOKEN:}
   google:
     # Daily copy of all data to a separate Google Sheet (optional). See README, "Daily Google Sheet copy".
     sheet-id: ${GOOGLE_COPY_SHEET_ID:}

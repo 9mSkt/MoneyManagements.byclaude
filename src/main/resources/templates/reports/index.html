@@ -165,6 +165,16 @@
         <div class="card-head"><h2 th:text="#{rep.exportTitle}">Download your data</h2></div>
         <div class="setting-row">
             <div>
+                <div th:text="#{rep.yearXlsx(${year})}">Transactions 2026 by month (Excel)</div>
+                <div class="muted small" th:text="#{rep.yearXlsx.desc}">A summary sheet, then one sheet per month.</div>
+            </div>
+            <a class="btn small-btn" th:href="@{/reports/export/year.xlsx(year=${year})}" download>
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#download}"/></svg>
+                <span th:text="#{rep.download}">Download</span>
+            </a>
+        </div>
+        <div class="setting-row">
+            <div>
                 <div th:text="#{rep.csv}">Transactions (CSV)</div>
                 <div class="muted small" th:text="#{rep.csv.desc}">Opens in Excel or Google Sheets.</div>
             </div>

@@ -3,6 +3,7 @@ package com.moneymgmt.web;
 import com.moneymgmt.repo.TransactionRepository;
 import com.moneymgmt.service.DataExportService;
 import com.moneymgmt.service.ReportService;
+import com.moneymgmt.service.YearExportService;
 import com.moneymgmt.util.AppTime;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -33,9 +34,11 @@ public class ReportController {
     private final DataExportService export;
     private final TransactionRepository transactions;
     private final MessageSource messages;
+    private final com.moneymgmt.service.YearExportService yearExport;
 
     public ReportController(ReportService reports, DataExportService export, TransactionRepository transactions,
-                            MessageSource messages) {
+                            MessageSource messages, com.moneymgmt.service.YearExportService yearExport) {
+        this.yearExport = yearExport;
         this.reports = reports;
         this.export = export;
         this.transactions = transactions;
@@ -110,6 +113,12 @@ public class ReportController {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString());
         export.transactionsCsv(from, to, response.getOutputStream());
+    }
+
+    /** One year of transactions in Excel: a Summary sheet and one sheet per month. */
+    @GetMapping("/reports/export/year.xlsx")
+    public ResponseEntity<byte[]> yearXlsx(@RequestParam int year, Locale locale) throws IOException {
+        return ExportApiController.xlsx(YearExportService.fileName(year), yearExport.yearXlsx(year, locale));
     }
 
     /** Every table of the app in one Excel file (a backup you can keep). */

@@ -21,8 +21,13 @@ public class SettingsController {
     private final CategoryRepository categories;
     private final SheetCopyService sheetCopy;
     private final TotpService totp;
+    private final ExportApiController driveExport;
+    private final com.moneymgmt.repo.AppSettingRepository appSettings;
 
-    public SettingsController(CategoryRepository categories, SheetCopyService sheetCopy, TotpService totp) {
+    public SettingsController(CategoryRepository categories, SheetCopyService sheetCopy, TotpService totp,
+                              ExportApiController driveExport, com.moneymgmt.repo.AppSettingRepository appSettings) {
+        this.driveExport = driveExport;
+        this.appSettings = appSettings;
         this.categories = categories;
         this.sheetCopy = sheetCopy;
         this.totp = totp;
@@ -32,6 +37,12 @@ public class SettingsController {
     public String settings(Model model) {
         model.addAttribute("copy", sheetCopy.status());
         model.addAttribute("twoStep", totp.isEnabled());
+        model.addAttribute("driveOn", driveExport.isEnabled());
+        appSettings.findById(ExportApiController.KEY_LAST).map(com.moneymgmt.domain.AppSetting::getValue)
+                .map(v -> v.split(" ")).filter(p -> p.length == 2).ifPresent(p -> {
+                    model.addAttribute("driveLast", java.time.Instant.parse(p[0]).atZone(com.moneymgmt.util.AppTime.ZONE));
+                    model.addAttribute("driveLastYear", p[1]);
+                });
         return "settings";
     }
 

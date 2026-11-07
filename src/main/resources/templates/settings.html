@@ -100,6 +100,19 @@
         </div>
     </div>
 
+    <div class="card" id="drive">
+        <div class="card-head"><h2 th:text="#{drive.title}">Yearly copy to Google Drive</h2></div>
+        <div class="setting-row">
+            <div class="grow">
+                <div class="muted small" th:if="${driveOn and driveLast != null}"
+                     th:text="#{drive.last(${driveLastYear}, ${#temporals.format(driveLast, 'd MMM yyyy HH:mm', #locale)})}">Last sent …</div>
+                <div class="muted small" th:if="${driveOn and driveLast == null}" th:text="#{drive.never}">Ready; nothing sent yet.</div>
+                <div class="muted small" th:unless="${driveOn}" th:text="#{drive.off}">Not set up yet.</div>
+            </div>
+            <span class="chip" th:classappend="${driveOn} ? 'chip-on'" th:text="${driveOn} ? #{settings.on} : #{settings.off}">Off</span>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-head"><h2 th:text="#{settings.security}">Sign-in security</h2></div>
         <div class="setting-row">
