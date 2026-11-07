@@ -315,6 +315,31 @@
     all.form.dispatchEvent(new Event('change'));
   });
 
+  // Category cards (Transactions): on a phone they start closed so the page stays short; "Open all" / "Close all".
+  var phone = window.matchMedia('(max-width: 640px)');
+  var closeOnPhone = function (root) {
+    if (!phone.matches) { return; }
+    root.querySelectorAll('details[data-phone-closed]').forEach(function (d) { d.open = false; });
+  };
+  closeOnPhone(document);
+  document.addEventListener('htmx:afterSwap', function (e) { closeOnPhone(e.target || document); });
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('[data-toggle-cards]');
+    if (!btn) { return; }
+    var cards = document.querySelectorAll('.cat-card');
+    var anyClosed = Array.prototype.some.call(cards, function (d) { return !d.open; });
+    cards.forEach(function (d) { d.open = anyClosed; });
+    btn.textContent = btn.getAttribute(anyClosed ? 'data-close-text' : 'data-open-text');
+  });
+
+  // Phone: the Type / Group / Category filters fold behind one "Filters" button.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-filter-toggle]');
+    if (!b) { return; }
+    var open = b.form.classList.toggle('show-more');
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
   // A select with data-autosubmit sends its form as soon as the choice changes (e.g. the report year).
   document.addEventListener('change', function (e) {
     var el = e.target;

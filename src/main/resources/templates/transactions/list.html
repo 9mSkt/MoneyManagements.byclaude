@@ -13,7 +13,7 @@
             <a class="btn secondary" th:href="@{/transactions/installments(month=${month})}">
                 <span th:text="#{split.open}">Pay in installments</span>
             </a>
-            <a class="btn" th:href="@{/transactions/new(month=${month})}">
+            <a class="btn new-tx-btn" th:href="@{/transactions/new(month=${month})}">
                 <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
                 <span th:text="#{tx.new}">New transaction</span>
             </a>
@@ -24,12 +24,16 @@
           th:attr="hx-get=@{/transactions}" hx-target="#tx-results" hx-swap="outerHTML" hx-push-url="true"
           hx-trigger="change, input changed delay:400ms from:find input[name=q], submit">
         <input type="hidden" name="month" th:value="${allMonths} ? 'all' : ${month}">
+        <input type="hidden" name="view" th:value="${byDate} ? 'date' : ''">
         <div class="field search">
             <label for="f-q" class="sr-only" th:text="#{tx.filter.search}">Search</label>
             <input class="input" id="f-q" name="q" type="search" th:value="${filter.q}" autocomplete="off"
                    th:placeholder="#{tx.filter.search}">
         </div>
-        <div class="field">
+        <button type="button" class="btn secondary filter-toggle" data-filter-toggle aria-expanded="false"
+                th:classappend="${filter.type != null or filter.group != null or filter.categoryId != null} ? 'active'"
+                th:text="#{tx.filter.more}">Filters</button>
+        <div class="field filter-more">
             <label for="f-type" th:text="#{tx.type}">Type</label>
             <select class="input" id="f-type" name="type">
                 <option value="" th:text="#{tx.filter.all}">All</option>
@@ -37,7 +41,7 @@
                         th:selected="${filter.type == ty}">Expense</option>
             </select>
         </div>
-        <div class="field">
+        <div class="field filter-more">
             <label for="f-group" th:text="#{tx.group}">Group</label>
             <select class="input" id="f-group" name="group">
                 <option value="" th:text="#{tx.filter.all}">All</option>
@@ -45,7 +49,7 @@
                         th:selected="${filter.group == g}">Eat</option>
             </select>
         </div>
-        <div class="field">
+        <div class="field filter-more">
             <label for="f-cat" th:text="#{tx.category}">Category</label>
             <select class="input" id="f-cat" name="category">
                 <option value="" th:text="#{tx.filter.all}">All</option>
@@ -57,7 +61,7 @@
                 </optgroup>
             </select>
         </div>
-        <div class="filter-actions">
+        <div class="filter-actions filter-more">
             <noscript><button type="submit" class="btn secondary" th:text="#{tx.filter.apply}">Apply</button></noscript>
             <a class="btn secondary" th:href="@{/transactions(month=${allMonths} ? 'all' : ${month})}"
                th:text="#{tx.filter.clear}">Clear</a>
@@ -106,7 +110,7 @@
         </div>
 
         <!-- Installment plans with a payment in this month -->
-        <details class="card month-plans" open th:if="${monthPlans != null and !#lists.isEmpty(monthPlans) and !filter.filtered}">
+        <details class="card month-plans" open data-phone-closed th:if="${monthPlans != null and !#lists.isEmpty(monthPlans) and !filter.filtered}">
             <summary class="card-head">
                 <h2 th:text="#{tx.plans.title(${#lists.size(monthPlans)})}">Installments this month (2)</h2>
                 <a class="link-small" th:href="@{/fixed-costs}" th:text="#{tx.plans.all}">All plans</a>
@@ -135,45 +139,89 @@
             </ul>
         </details>
 
-        <div class="card">
-            <p class="muted" th:if="${result.truncated}" th:text="#{tx.truncated(${T(com.moneymgmt.service.TransactionService).MAX_ROWS})}">Showing first 500.</p>
-            <p class="over-note" th:unless="${#sets.isEmpty(overIds)}">
-                <span class="over-swatch" aria-hidden="true"></span>
-                <span th:text="#{tx.overNote}">Red rows pushed a group over budget.</span>
-                <a th:href="@{/budget(month=${month})}" th:text="#{tx.overLink}">See budget</a>
-            </p>
-            <div class="empty" th:if="${#lists.isEmpty(result.rows)}">
-                <p class="muted" th:text="${filter.filtered} ? #{tx.empty.filtered} : #{tx.empty}">Nothing yet.</p>
-                <button type="button" class="btn" data-open="quick-add" th:text="#{tx.new}">Add</button>
-            </div>
-            <ul class="tx-list" th:unless="${#lists.isEmpty(result.rows)}">
+        <div class="tx-tools">
+            <nav class="segmented view-switch" th:aria-label="#{tx.view}">
+                <a th:href="@{/transactions} + ${baseQuery}" th:classappend="${!byDate} ? 'on'"
+                   th:attr="aria-current=${!byDate} ? 'page' : null" th:text="#{tx.view.category}">By category</a>
+                <a th:href="@{/transactions} + ${baseQuery} + '&view=date'" th:classappend="${byDate} ? 'on'"
+                   th:attr="aria-current=${byDate} ? 'page' : null" th:text="#{tx.view.date}">By date</a>
+            </nav>
+            <button type="button" class="link-small link-btn" data-toggle-cards th:unless="${byDate or #lists.isEmpty(cards)}"
+                    th:attr="data-open-text=#{tx.cards.openAll},data-close-text=#{tx.cards.closeAll}"
+                    th:text="#{tx.cards.openAll}">Open all</button>
+        </div>
+
+        <p class="muted" th:if="${result.truncated}" th:text="#{tx.truncated(${T(com.moneymgmt.service.TransactionService).MAX_ROWS})}">Showing first 500.</p>
+        <p class="over-note" th:unless="${#sets.isEmpty(overIds)}">
+            <span class="over-swatch" aria-hidden="true"></span>
+            <span th:text="#{tx.overNote}">Red rows pushed a group over budget.</span>
+            <a th:href="@{/budget(month=${month})}" th:text="#{tx.overLink}">See budget</a>
+        </p>
+        <div class="card empty" th:if="${#lists.isEmpty(result.rows)}">
+            <p class="muted" th:text="${filter.filtered} ? #{tx.empty.filtered} : #{tx.empty}">Nothing yet.</p>
+            <button type="button" class="btn" data-open="quick-add" th:text="#{tx.new}">Add</button>
+        </div>
+
+        <!-- By category: one card per category. On a phone the cards start closed (just name and total). -->
+        <div class="cat-cards" th:unless="${byDate or #lists.isEmpty(result.rows)}">
+            <details class="card cat-card" th:each="c : ${cards}" open data-phone-closed
+                     th:classappend="${c.over > 0} ? 'has-over'">
+                <summary class="cat-head">
+                    <span class="dot" th:classappend="${c.category.budgetGroup != null} ? ${'g-' + c.category.budgetGroup} : ${'g-' + c.type}"></span>
+                    <span class="cat-name">
+                        <strong th:text="${c.category.name(#locale)}">Eat / Lifestyle</strong>
+                        <span class="sub" th:text="#{tx.cards.count(${#lists.size(c.rows)}, ${@fmt.percent(c.share)})}">5 entries · 30%</span>
+                    </span>
+                    <span class="chip over-chip" th:if="${c.over > 0}" th:text="#{tx.cards.over(${c.over})}">1 over</span>
+                    <span class="amount cat-total" th:classappend="${@fmt.kind(c.type)}" th:text="${@fmt.baht(c.total)}">฿0</span>
+                </summary>
+                <div class="track thin" aria-hidden="true">
+                    <div class="fill" th:classappend="${'kind-' + @fmt.kind(c.type)}" th:style="'width:' + ${c.share} + '%'"></div>
+                </div>
+                <ul class="tx-list compact">
+                    <li th:each="t : ${c.first()}"><a th:replace="~{transactions/list :: txRow(${t}, true)}"></a></li>
+                </ul>
+                <details class="more-rows" th:unless="${#lists.isEmpty(c.rest())}">
+                    <summary th:text="#{tx.cards.more(${#lists.size(c.rest())})}">Show 3 more</summary>
+                    <ul class="tx-list compact">
+                        <li th:each="t : ${c.rest()}"><a th:replace="~{transactions/list :: txRow(${t}, true)}"></a></li>
+                    </ul>
+                </details>
+            </details>
+        </div>
+
+        <!-- By date: the full list, newest first -->
+        <div class="card" th:if="${byDate and !#lists.isEmpty(result.rows)}">
+            <ul class="tx-list">
                 <th:block th:each="t, s : ${result.rows}">
                     <li class="tx-date" th:if="${s.first or result.rows[s.index - 1].date != t.date}"
                         th:text="${#temporals.format(t.date, 'EEE d MMM yyyy', #locale)}">Mon 2 Nov 2026</li>
-                    <li>
-                        <a class="tx-row" th:classappend="${overIds.contains(t.id)} ? 'over'" th:href="@{/transactions/{id}/edit(id=${t.id})}"
-                           th:title="${overIds.contains(t.id)} ? #{tx.overBudget}">
-                            <span class="dot" th:classappend="${@fmt.dot(t)}"></span>
-                            <div class="grow">
-                                <div class="title" th:text="${t.description ?: t.category.name(#locale)}">Lunch</div>
-                                <div class="sub">
-                                    <span th:text="${t.category.name(#locale)}">Eat</span>
-                                    <span class="chip" th:if="${t.installment != null and t.installmentNo != null}"
-                                          th:text="${t.installmentNo + '/' + t.installment.months}">3/10</span>
-                                          <span class="chip fee-chip" th:if="${t.fee != null}" th:text="#{tx.feeChip(${@fmt.baht(t.fee)})}">incl. fee</span>
-                                    <span class="chip" th:if="${t.kpiPercent != null}"
-                                          th:text="#{incentive.kpiShort(${@fmt.percent(t.kpiPercent)})}">KPI</span>
-                                    <span class="tags" th:if="${t.tags != null}" th:text="${'#' + #strings.replace(t.tags, ', ', ' #')}">#tag</span>
-                                </div>
-                            </div>
-                            <span class="amount" th:classappend="${@fmt.kind(t.type)}" th:text="${@fmt.signed(t)}">−฿0</span>
-                        </a>
-                    </li>
+                    <li><a th:replace="~{transactions/list :: txRow(${t}, false)}"></a></li>
                 </th:block>
             </ul>
         </div>
     </div>
 </section>
+
+<!-- One entry. compact = inside a category card: shows the date instead of the category. -->
+<a th:fragment="txRow(t, compact)" class="tx-row" th:classappend="${overIds.contains(t.id)} ? 'over'"
+   th:href="@{/transactions/{id}/edit(id=${t.id})}" th:title="${overIds.contains(t.id)} ? #{tx.overBudget}">
+    <span class="dot" th:unless="${compact}" th:classappend="${@fmt.dot(t)}"></span>
+    <div class="grow">
+        <div class="title" th:text="${t.description ?: t.category.name(#locale)}">Lunch</div>
+        <div class="sub">
+            <span th:if="${compact}" th:text="${#temporals.format(t.date, 'EEE d MMM', #locale)}">Mon 2 Nov</span>
+            <span th:unless="${compact}" th:text="${t.category.name(#locale)}">Eat</span>
+            <span class="chip" th:if="${t.installment != null and t.installmentNo != null}"
+                  th:text="${t.installmentNo + '/' + t.installment.months}">3/10</span>
+            <span class="chip fee-chip" th:if="${t.fee != null}" th:text="#{tx.feeChip(${@fmt.baht(t.fee)})}">incl. fee</span>
+            <span class="chip" th:if="${t.kpiPercent != null}"
+                  th:text="#{incentive.kpiShort(${@fmt.percent(t.kpiPercent)})}">KPI</span>
+            <span class="tags" th:if="${t.tags != null}" th:text="${'#' + #strings.replace(t.tags, ', ', ' #')}">#tag</span>
+        </div>
+    </div>
+    <span class="amount" th:classappend="${@fmt.kind(t.type)}" th:text="${@fmt.signed(t)}">−฿0</span>
+</a>
 
 <!-- Month switcher. oob = true when sent with an HTMX filter update. -->
 <nav th:fragment="monthNav(oob)" id="month-nav" class="month-nav" th:aria-label="#{tx.month}"
