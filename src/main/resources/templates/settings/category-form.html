@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${form.id == null} ? #{cat.new} : #{cat.edit}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.id == null} ? #{cat.new} : #{cat.edit}">New category</h2>
+            <a class="link-small" th:href="@{/settings/categories}" th:text="#{cat.backList}">Back</a>
+        </div>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/settings/categories}" method="post" th:object="${form}">
+            <input type="hidden" th:field="*{id}">
+            <input type="hidden" th:field="*{type}">
+            <p class="muted small">
+                <span th:text="#{cat.type}">Type</span>:
+                <strong th:text="#{${'tx.type.' + form.type}}">Expense</strong>
+            </p>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('nameEn')} ? 'has-error'">
+                    <label for="nameEn" th:text="#{cat.nameEn}">Name (English)</label>
+                    <input class="input" id="nameEn" th:field="*{nameEn}" maxlength="100" required autocomplete="off" lang="en">
+                    <div class="field-error" th:if="${errors.containsKey('nameEn')}" th:text="#{${errors.get('nameEn')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('nameTh')} ? 'has-error'">
+                    <label for="nameTh" th:text="#{cat.nameTh}">Name (Thai)</label>
+                    <input class="input" id="nameTh" th:field="*{nameTh}" maxlength="100" required autocomplete="off" lang="th">
+                    <div class="field-error" th:if="${errors.containsKey('nameTh')}" th:text="#{${errors.get('nameTh')}}">Error</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:if="${!#lists.isEmpty(groups)}" th:classappend="${errors.containsKey('budgetGroup')} ? 'has-error'">
+                    <label for="group" th:text="#{cat.group}">Budget group</label>
+                    <select class="input" id="group" th:field="*{budgetGroup}">
+                        <option th:each="g : ${groups}" th:value="${g}" th:text="#{${'group.' + g}}">Shopping</option>
+                    </select>
+                    <div class="field-error" th:if="${errors.containsKey('budgetGroup')}" th:text="#{${errors.get('budgetGroup')}}">Error</div>
+                </div>
+                <div class="field" th:classappend="${errors.containsKey('sortOrder')} ? 'has-error'">
+                    <label for="sort" th:text="#{cat.sort}">Order in lists</label>
+                    <input class="input" id="sort" type="number" min="0" max="99999" th:field="*{sortOrder}">
+                    <div class="field-error" th:if="${errors.containsKey('sortOrder')}" th:text="#{${errors.get('sortOrder')}}">Error</div>
+                </div>
+            </div>
+            <label class="check">
+                <input type="checkbox" th:field="*{active}">
+                <span th:text="#{cat.active}">Show in forms</span>
+            </label>
+            <p class="muted small" th:text="#{cat.activeHelp}">Hidden categories keep their entries.</p>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/settings/categories}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+</body>
+</html>

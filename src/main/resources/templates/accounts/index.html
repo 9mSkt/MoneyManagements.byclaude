@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.accounts}, ~{::content}, ~{::scripts})}">
+<body>
+<section th:fragment="content" class="stack">
+
+    <div class="grid totals">
+        <div class="card kpi small">
+            <div class="label" th:text="#{acc.netWorth}">Net worth</div>
+            <div class="value amount" th:classappend="${nw.total.signum() < 0} ? 'expense' : 'primary'"
+                 th:text="${@fmt.baht(nw.total)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{acc.cash}">Cash and bank</div>
+            <div class="value amount income" th:text="${@fmt.baht(nw.cash)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{acc.portfolio}">Investments</div>
+            <a class="value amount investment" th:href="@{/investments}" th:text="${@fmt.baht(nw.portfolio)}">฿0</a>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{acc.debts}">Debts</div>
+            <div class="value amount expense" th:text="${@fmt.baht(nw.debts)}">฿0</div>
+            <div class="kpi-help" th:text="#{acc.debtsHelp(${@fmt.baht(nw.credit)}, ${@fmt.baht(nw.installmentDebt)})}">Cards ฿0 · installments ฿0</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{acc.chart.title}">Net worth over time</h2></div>
+        <div id="nw-chart" th:attr="data-src=@{/api/accounts/history}">
+            <div id="chart-networth" class="chart"></div>
+        </div>
+        <p class="muted small explain" th:text="#{acc.chart.help}">Accounts count from their first balance.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="#{acc.title}">Accounts</h2>
+            <a class="btn small-btn" th:href="@{/accounts/new}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                <span th:text="#{acc.add}">Add account</span>
+            </a>
+        </div>
+        <div class="empty muted" th:if="${#lists.isEmpty(nw.accounts)}">
+            <p th:text="#{acc.none}">No accounts yet.</p>
+            <a class="btn" th:href="@{/accounts/new}" th:text="#{acc.add}">Add account</a>
+        </div>
+
+        <form th:unless="${#lists.isEmpty(nw.accounts)}" th:action="@{/accounts/balances}" method="post">
+            <p class="muted small" th:text="#{acc.updateHelp}">Type today's balances and save.</p>
+            <ul class="list post-list">
+                <li th:each="r : ${nw.accounts}" th:classappend="${!r.account.active} ? 'paused'">
+                    <span class="dot" th:classappend="${'acc-' + r.account.type}"></span>
+                    <div class="grow">
+                        <a class="title" th:href="@{/accounts/{id}/edit(id=${r.account.id})}" th:text="${r.account.name}">KBank</a>
+                        <div class="sub">
+                            <span th:text="#{${'acc.type.' + r.account.type}}">Bank</span>
+                            <span th:if="${r.balanceDate != null}"
+                                  th:text="'· ' + #{acc.asOf(${#temporals.format(r.balanceDate, 'd MMM yyyy', #locale)})}">· as of 1 Nov</span>
+                            <span class="chip" th:if="${!r.account.active}" th:text="#{acc.inactive}">Not counted</span>
+                        </div>
+                    </div>
+                    <div class="inline-amount">
+                        <label class="sr-only" th:for="${'bal-' + r.account.id}" th:text="#{acc.balance}">Balance</label>
+                        <input class="input" th:id="${'bal-' + r.account.id}" th:name="${'balance_' + r.account.id}"
+                               inputmode="decimal" autocomplete="off" maxlength="20" th:value="${r.balance}"
+                               th:classappend="${r.debt} ? 'expense'">
+                    </div>
+                </li>
+            </ul>
+            <div class="balance-save">
+                <div class="field">
+                    <label for="bal-date" th:text="#{acc.date}">Date</label>
+                    <input class="input" id="bal-date" type="date" name="date" th:value="${today}" th:max="${today}" required>
+                </div>
+                <button type="submit" class="btn" th:text="#{acc.saveBalances}">Save balances</button>
+            </div>
+        </form>
+    </div>
+    <p class="muted small" th:text="#{acc.help}">Net worth = accounts + investments − debts.</p>
+</section>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/echarts-5.6.0.min.js}"></script>
+    <script th:src="@{/js/charts.js}"></script>
+    <script th:src="@{/js/accounts.js}"></script>
+</th:block>
+</body>
+</html>

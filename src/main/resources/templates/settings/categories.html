@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{cat.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <p class="muted small" th:text="#{cat.intro}">Names show in English or Thai.</p>
+    <div class="card" th:each="ty : ${types}">
+        <div class="card-head">
+            <h2 th:text="#{${'tx.type.' + ty}}">Expense</h2>
+            <a class="btn small-btn" th:href="@{/settings/categories/new(type=${ty})}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                <span th:text="#{cat.add}">Add</span>
+            </a>
+        </div>
+        <ul class="list">
+            <li th:each="c : ${byType.get(ty)}" th:classappend="${!c.active} ? 'paused'">
+                <span class="dot" th:classappend="${c.budgetGroup != null} ? ${'g-' + c.budgetGroup} : ${'g-' + c.type}"></span>
+                <div class="grow">
+                    <a class="title" th:href="@{/settings/categories/{id}/edit(id=${c.id})}" th:text="${c.nameEn}">Shopping</a>
+                    <div class="sub">
+                        <span th:text="${c.nameTh}">ช้อปปิ้ง</span>
+                        <span th:if="${c.budgetGroup != null}" th:text="'· ' + #{${'group.' + c.budgetGroup}}">· Shopping</span>
+                        <span class="chip" th:if="${!c.active}" th:text="#{cat.off}">Hidden</span>
+                        <span class="chip" th:if="${c.needsReview}" th:text="#{cat.review}">Check</span>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+    <a class="link-small" th:href="@{/settings}" th:text="#{cat.back}">Back to settings</a>
+</section>
+</body>
+</html>

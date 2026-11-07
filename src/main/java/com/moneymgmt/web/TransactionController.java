@@ -13,6 +13,7 @@ import com.moneymgmt.util.AppTime;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.YearMonth;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -192,6 +193,37 @@ public class TransactionController {
         service.delete(id);
         flash.addFlashAttribute("flash", "tx.deleted");
         return "redirect:" + back(returnTo, month);
+    }
+
+    // ---------- Pay in installments (credit card 0 % campaign) ----------
+
+    /** A month's purchases that can be turned into 0 % installment plans, with checkboxes. */
+    @GetMapping("/installments")
+    public String splitForm(@RequestParam(required = false) String month, Model model) {
+        YearMonth ym = orThisMonth(month);
+        List<Transaction> rows = transactions.findByDateBetweenOrderByDateAscIdAsc(ym.atDay(1), ym.atEndOfMonth())
+                .stream().filter(TransactionService::canSplit).toList();
+        model.addAttribute("month", ym);
+        model.addAttribute("rows", rows);
+        return "transactions/installments";
+    }
+
+    @PostMapping("/installments")
+    public String split(@RequestParam(required = false) List<Long> ids, @RequestParam(defaultValue = "3") int months,
+                        @RequestParam(required = false) String month, RedirectAttributes flash) {
+        YearMonth ym = orThisMonth(month);
+        if (ids == null || ids.isEmpty()) {
+            flash.addFlashAttribute("flashError", "split.error.none");
+            return "redirect:/transactions/installments?month=" + ym;
+        }
+        if (months < 2 || months > 60) {
+            flash.addFlashAttribute("flashError", "split.error.months");
+            return "redirect:/transactions/installments?month=" + ym;
+        }
+        int done = service.splitIntoInstallments(ids, months);
+        posting.recheck();
+        flash.addFlashAttribute(done > 0 ? "flash" : "flashError", done > 0 ? "split.done" : "split.error.none");
+        return "redirect:/transactions?month=" + ym;
     }
 
     // ---------- Monthly incentive ----------

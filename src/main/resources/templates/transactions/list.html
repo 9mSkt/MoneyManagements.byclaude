@@ -10,6 +10,9 @@
             <a class="btn secondary" th:href="@{/transactions/incentive(month=${month})}">
                 <span th:text="#{incentive.open}">Incentive</span>
             </a>
+            <a class="btn secondary" th:href="@{/transactions/installments(month=${month})}">
+                <span th:text="#{split.open}">Pay in installments</span>
+            </a>
             <a class="btn" th:href="@{/transactions/new(month=${month})}">
                 <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
                 <span th:text="#{tx.new}">New transaction</span>

@@ -526,3 +526,53 @@ table.data tfoot th { color: var(--text); font-weight: 600; border-bottom: 0; }
 @media (max-width: 480px) { .br-range { display: block; } }
 .table-wrap table.br-table th { white-space: normal; }
 .table-wrap table.br-table td:first-child { white-space: normal; }
+
+/* ---------- Phase 6: goals, accounts, reports, settings ---------- */
+.goal-list li { display: block; padding: 14px 0; }
+.goal-note { margin-top: 6px; }
+.goal-money { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.goal-money .money-input { width: 150px; }
+.goal-money .input { height: 36px; }
+.goal-money .check { margin: 0; font-size: 0.82rem; color: var(--text-muted); flex-basis: 100%; }
+.goal-money .mode-switch label { padding: 6px 10px; font-size: 0.8rem; }
+@media (max-width: 420px) { .goal-money .money-input { flex: 1; width: auto; min-width: 0; } }
+
+.dot.acc-WALLET { background: var(--income); }
+.dot.acc-BANK { background: var(--primary); }
+.dot.acc-INVESTMENT { background: var(--investment); }
+.dot.acc-CREDIT { background: var(--expense); }
+.post-list .inline-amount .input.expense { color: var(--expense); }
+.balance-save { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.balance-save .field { margin: 0; }
+.balance-save .input { height: 44px; }
+a.value.amount { display: block; color: var(--investment); }
+a.value.amount:hover { text-decoration: none; }
+
+.inline-form { display: flex; gap: 8px; align-items: center; }
+.inline-form .input { height: 40px; padding-top: 0; padding-bottom: 0; }
+.totals .kpi:not(.card) { padding: 0 0 12px; }
+.rep-chart { margin: 4px 0 12px; }
+.report-table th .dot { display: inline-block; vertical-align: middle; width: 8px; height: 8px; }
+.report-table tfoot th { color: var(--text); font-weight: 650; border-top: 2px solid var(--border); }
+.report-table tbody tr.paused td { color: var(--text-muted); }
+.compare-form { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)) auto; gap: 12px; align-items: end; margin-bottom: 12px; }
+.compare-form .field { margin: 0; }
+.compare-form .btn { height: 44px; }
+@media (max-width: 560px) { .compare-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .compare-form .btn { grid-column: 1 / -1; } }
+.compare-table .compare-sum th { color: var(--text); font-weight: 600; font-size: 0.9rem; }
+.compare-table .compare-type th { padding-top: 18px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.compare-table td .dot { display: inline-block; margin-right: 6px; vertical-align: middle; width: 8px; height: 8px; }
+.setting-row .grow { flex: 1; min-width: 200px; }
+.chip.chip-on { background: var(--primary-soft); color: var(--primary); }
+/* Pay in installments */
+.split-list li { padding: 0; }
+.split-row { display: flex; align-items: center; gap: 12px; padding: 10px 2px; width: 100%; cursor: pointer; }
+.split-row input { width: 20px; height: 20px; accent-color: var(--primary); flex: none; }
+.split-row .grow { display: block; }
+.split-row .title, .split-row .sub { display: block; }
+.split-row:has(input:checked) { background: var(--primary-soft); border-radius: 8px; }
+.split-foot { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.split-foot .field { margin: 0; }
+.split-summary { flex: 1; min-width: 200px; padding-bottom: 10px; }
+.compare-form .input { width: 100%; min-width: 0; }
+.compare-form { justify-content: start; }

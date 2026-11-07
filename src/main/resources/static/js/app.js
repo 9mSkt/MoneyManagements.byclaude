@@ -287,6 +287,29 @@
     if (token && header) { e.detail.headers[header.content] = token.content; }
   });
 
+  // Pay in installments: show the total of the ticked purchases and the monthly payment (preview only).
+  var splitForm = document.querySelector('[data-split-form]');
+  if (splitForm) {
+    var fmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var updateSplit = function () {
+      var cents = 0;
+      splitForm.querySelectorAll('input[name="ids"]:checked').forEach(function (c) {
+        cents += Math.round(parseFloat(c.getAttribute('data-amount')) * 100);
+      });
+      var months = parseInt(splitForm.querySelector('[name="months"]').value, 10) || 3;
+      splitForm.querySelector('[data-split-total]').textContent = '฿' + fmt.format(cents / 100);
+      splitForm.querySelector('[data-split-monthly]').textContent = '฿' + fmt.format(Math.round(cents / months) / 100);
+    };
+    splitForm.addEventListener('change', updateSplit);
+    updateSplit();
+  }
+
+  // A select with data-autosubmit sends its form as soon as the choice changes (e.g. the report year).
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (el.matches && el.matches('select[data-autosubmit]') && el.form) { el.form.submit(); }
+  });
+
   // Idle sign-out: the server session ends after the timeout; send the browser to the login page at that moment.
   var timeoutMeta = document.querySelector('meta[name="session-timeout"]');
   if (timeoutMeta) {

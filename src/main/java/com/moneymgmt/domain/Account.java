@@ -24,6 +24,8 @@ public class Account {
     @Column(nullable = false)
     private boolean active = true;
 
+    private String note;
+
     protected Account() {
     }
 
@@ -42,4 +44,6 @@ public class Account {
     public void setOpeningBalance(BigDecimal openingBalance) { this.openingBalance = openingBalance; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 }

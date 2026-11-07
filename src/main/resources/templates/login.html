@@ -43,6 +43,12 @@
                 <label for="password" th:text="#{login.password}">Password</label>
                 <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
             </div>
+            <div class="field" th:if="${twoStep}">
+                <label for="code" th:text="#{login.code}">6-digit code</label>
+                <input class="input" id="code" name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7"
+                       autocomplete="one-time-code" required>
+                <div class="hint" th:text="#{login.codeHelp}">From your authenticator app.</div>
+            </div>
             <button type="submit" class="btn" style="width:100%" th:text="#{login.submit}">Sign in</button>
         </form>
     </div>

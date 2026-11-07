@@ -57,4 +57,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** All entries of a month in the order they happened (for "which entry pushed a group over budget"). */
     @EntityGraph(attributePaths = {"category"})
     List<Transaction> findByDateBetweenOrderByDateAscIdAsc(LocalDate from, LocalDate to);
+
+    @Query("select min(t.date) from Transaction t")
+    LocalDate firstDate();
 }

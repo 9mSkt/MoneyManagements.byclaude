@@ -1,9 +1,10 @@
 spring:
   datasource:
-    # Neon PostgreSQL, e.g. jdbc:postgresql://<host>/<db>?sslmode=require
+    # Neon PostgreSQL. DATABASE_URL may be Neon's string as shown (postgresql://user:password@host/db?sslmode=require)
+    # or a JDBC URL (jdbc:postgresql://host/db?sslmode=require) with DATABASE_USERNAME and DATABASE_PASSWORD.
     url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    username: ${DATABASE_USERNAME:}
+    password: ${DATABASE_PASSWORD:}
     hikari:
       maximum-pool-size: 5
 

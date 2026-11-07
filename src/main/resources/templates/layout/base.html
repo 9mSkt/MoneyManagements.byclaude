@@ -39,8 +39,8 @@
                 <span th:text="#{top.add}">Add</span>
             </button>
             <nav class="lang-switch" th:aria-label="#{top.language}">
-                <a th:href="@{${currentPath}(lang='en')}" th:classappend="${#locale.language != 'th'} ? 'on'" hreflang="en">EN</a>
-                <a th:href="@{${currentPath}(lang='th')}" th:classappend="${#locale.language == 'th'} ? 'on'" hreflang="th">TH</a>
+                <a th:href="${langBase + 'lang=en'}" th:classappend="${#locale.language != 'th'} ? 'on'" hreflang="en">EN</a>
+                <a th:href="${langBase + 'lang=th'}" th:classappend="${#locale.language == 'th'} ? 'on'" hreflang="th">TH</a>
             </nav>
             <button type="button" class="icon-btn" data-theme-toggle th:title="#{top.theme}" th:aria-label="#{top.theme}">
                 <svg class="icon theme-light-icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#moon}"/></svg>

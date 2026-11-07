@@ -21,6 +21,8 @@
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <poi.version>5.4.1</poi.version>
+        <google-auth.version>1.54.0</google-auth.version>
+        <embedded-postgres.version>2.2.2</embedded-postgres.version>
     </properties>
 
     <dependencies>
@@ -71,6 +73,12 @@
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
         </dependency>
+        <!-- Daily copy to a Google Sheet: service-account sign-in (the Sheets API itself is called over HTTPS). -->
+        <dependency>
+            <groupId>com.google.auth</groupId>
+            <artifactId>google-auth-library-oauth2-http</artifactId>
+            <version>${google-auth.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -86,6 +94,13 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- A real PostgreSQL for one test, without Docker: checks the migrations and queries work on Neon. -->
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-postgres</artifactId>
+            <version>${embedded-postgres.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

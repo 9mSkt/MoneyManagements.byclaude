@@ -22,18 +22,100 @@
     </div>
 
     <div class="card">
+        <div class="card-head"><h2 th:text="#{settings.lists}">Lists</h2></div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{cat.title}">Categories</div>
+                <div class="muted small" th:text="#{settings.categories.desc}">Names in English and Thai, budget group.</div>
+            </div>
+            <a class="btn secondary" th:href="@{/settings/categories}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#list}"/></svg>
+                <span th:text="#{settings.open}">Open</span>
+            </a>
+        </div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{nav.accounts}">Accounts</div>
+                <div class="muted small" th:text="#{settings.accounts.desc}">Wallet, bank and credit card balances.</div>
+            </div>
+            <a class="btn secondary" th:href="@{/accounts}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#accounts}"/></svg>
+                <span th:text="#{settings.open}">Open</span>
+            </a>
+        </div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{settings.budget}">Budget rules</div>
+                <div class="muted small" th:text="#{settings.budget.desc}">Edit on the Budget page.</div>
+            </div>
+            <a class="btn secondary" th:href="@{/budget}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#budget}"/></svg>
+                <span th:text="#{settings.open}">Open</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-head"><h2 th:text="#{settings.data}">Data</h2></div>
         <div class="setting-row">
             <div>
                 <div th:text="#{settings.import}">Import</div>
-                <div class="muted" style="font-size:.85rem" th:text="#{settings.import.desc}">Upload .xlsx</div>
+                <div class="muted small" th:text="#{settings.import.desc}">Upload .xlsx</div>
             </div>
             <a class="btn secondary" th:href="@{/settings/import}">
                 <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#upload}"/></svg>
                 <span th:text="#{settings.import.open}">Open</span>
             </a>
         </div>
-        <p class="muted" style="font-size:.85rem;margin:8px 0 0" th:text="#{settings.later}">Later phases</p>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{settings.export}">Download your data</div>
+                <div class="muted small" th:text="#{settings.export.desc}">CSV or a full Excel backup.</div>
+            </div>
+            <a class="btn secondary" th:href="@{/reports#export}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#download}"/></svg>
+                <span th:text="#{settings.open}">Open</span>
+            </a>
+        </div>
+
+        <div class="setting-row" id="copy">
+            <div class="grow">
+                <div th:text="#{copy.title}">Daily copy to Google Sheet</div>
+                <th:block th:if="${copy.configured}">
+                    <div class="muted small" th:if="${copy.lastSuccess != null}"
+                         th:text="#{copy.last(${#temporals.format(copy.lastSuccess.atZone(T(com.moneymgmt.util.AppTime).ZONE), 'd MMM yyyy HH:mm', #locale)})}">Last copy: …</div>
+                    <div class="muted small" th:if="${copy.lastSuccess == null}" th:text="#{copy.never}">No copy yet.</div>
+                    <div class="small over-text" th:if="${copy.lastError != null}" th:text="#{copy.error(${copy.lastError})}">Last try failed</div>
+                    <div class="muted small" th:if="${copy.serviceAccount != null}"
+                         th:text="#{copy.shareWith(${copy.serviceAccount})}">Share the sheet with …</div>
+                </th:block>
+                <div class="muted small" th:unless="${copy.configured}" th:text="#{copy.notSetUp}">Not set up yet.</div>
+            </div>
+            <form th:if="${copy.configured}" th:action="@{/settings/google-copy}" method="post">
+                <button type="submit" class="btn secondary">
+                    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#copy}"/></svg>
+                    <span th:text="#{copy.now}">Copy now</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2 th:text="#{settings.security}">Sign-in security</h2></div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{settings.twoStep}">Two-step code</div>
+                <div class="muted small" th:text="${twoStep} ? #{settings.twoStep.on} : #{settings.twoStep.off}">Off</div>
+            </div>
+            <span class="chip" th:classappend="${twoStep} ? 'chip-on'" th:text="${twoStep} ? #{settings.on} : #{settings.off}">Off</span>
+        </div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{settings.lockout}">Lockout</div>
+                <div class="muted small" th:text="#{settings.lockout.desc}">5 wrong tries lock sign-in for 15 minutes; idle sign-out after 30 minutes.</div>
+            </div>
+            <svg class="icon primary" aria-hidden="true"><use th:href="@{/icons/sprite.svg#shield}"/></svg>
+        </div>
     </div>
 </section>
 </body>

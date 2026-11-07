@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.reports}, ~{::content}, ~{::scripts})}">
+<body>
+<section th:fragment="content" class="stack">
+
+    <!-- Yearly report -->
+    <div class="card">
+        <div class="card-head wrap">
+            <h2 th:text="#{rep.yearTitle(${year})}">Year 2026</h2>
+            <form method="get" th:action="@{/reports}" class="inline-form">
+                <input type="hidden" name="a" th:value="${monthA}">
+                <input type="hidden" name="b" th:value="${monthB}">
+                <label class="sr-only" for="year" th:text="#{rep.year}">Year</label>
+                <select class="input" id="year" name="year" data-autosubmit>
+                    <option th:each="y : ${years}" th:value="${y}" th:text="${y}" th:selected="${y == year}">2026</option>
+                </select>
+                <noscript><button type="submit" class="btn secondary small-btn" th:text="#{rep.show}">Show</button></noscript>
+            </form>
+        </div>
+
+        <div class="grid totals">
+            <div class="kpi">
+                <div class="label" th:text="#{rep.income}">Income</div>
+                <div class="value amount income" th:text="${@fmt.baht(report.total.summary.income)}">฿0</div>
+                <div class="kpi-help" th:text="#{rep.avg(${@fmt.baht(report.averageIncome)})}">avg ฿0 / month</div>
+            </div>
+            <div class="kpi">
+                <div class="label" th:text="#{rep.outcome}">Outcome</div>
+                <div class="value amount expense" th:text="${@fmt.baht(report.total.summary.expense)}">฿0</div>
+                <div class="kpi-help" th:text="#{rep.avg(${@fmt.baht(report.averageExpense)})}">avg ฿0 / month</div>
+            </div>
+            <div class="kpi">
+                <div class="label" th:text="#{rep.savedInvested}">Saved and invested</div>
+                <div class="value amount investment" th:text="${@fmt.baht(report.total.summary.transfer)}">฿0</div>
+            </div>
+            <div class="kpi">
+                <div class="label" th:text="#{rep.savingRate}">Saving rate</div>
+                <div class="value amount primary" th:text="${@fmt.percent(report.total.summary.savingRate)}">0%</div>
+            </div>
+        </div>
+
+        <div id="rep-chart" th:attr="data-src=@{/api/reports/year(year=${year})}" class="rep-chart">
+            <div id="chart-year" class="chart"></div>
+        </div>
+
+        <p class="muted" th:if="${report.empty}" th:text="#{rep.noData}">No entries this year.</p>
+        <div class="table-wrap" th:unless="${report.empty}">
+            <table class="data report-table">
+                <thead>
+                <tr>
+                    <th th:text="#{rep.month}">Month</th>
+                    <th class="num" th:text="#{rep.income}">Income</th>
+                    <th class="num" th:each="g : ${groups}">
+                        <span class="dot" th:classappend="${'g-' + g}"></span> <span th:text="#{${'group.' + g}}">Eat</span>
+                    </th>
+                    <th class="num" th:text="#{rep.outcome}">Outcome</th>
+                    <th class="num" th:text="#{rep.remaining}">Remaining</th>
+                    <th class="num" th:text="#{rep.savingRate}">Saving rate</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${report.rows}" th:classappend="${r.summary.empty} ? 'paused'">
+                    <td th:text="${#temporals.format(r.month, 'MMM', #locale)}">Jan</td>
+                    <td class="num income" th:text="${@fmt.baht(r.summary.income)}">฿0</td>
+                    <td class="num" th:each="g : ${groups}" th:text="${r.group(g).signum() == 0} ? '—' : ${@fmt.baht(r.group(g))}">฿0</td>
+                    <td class="num expense" th:text="${@fmt.baht(r.summary.expense)}">฿0</td>
+                    <td class="num" th:classappend="${r.summary.remaining.signum() < 0} ? 'over-text'"
+                        th:text="${@fmt.baht(r.summary.remaining)}">฿0</td>
+                    <td class="num" th:text="${r.summary.empty} ? '—' : ${@fmt.percent(r.summary.savingRate)}">0%</td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <th th:text="#{rep.total}">Total</th>
+                    <th class="num income" th:text="${@fmt.baht(report.total.summary.income)}">฿0</th>
+                    <th class="num" th:each="g : ${groups}" th:text="${@fmt.baht(report.total.group(g))}">฿0</th>
+                    <th class="num expense" th:text="${@fmt.baht(report.total.summary.expense)}">฿0</th>
+                    <th class="num" th:classappend="${report.total.summary.remaining.signum() < 0} ? 'over-text'"
+                        th:text="${@fmt.baht(report.total.summary.remaining)}">฿0</th>
+                    <th class="num" th:text="${@fmt.percent(report.total.summary.savingRate)}">0%</th>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+        <p class="muted small explain" th:text="#{rep.help}">Outcome = expenses. Remaining = income − outcome − saved and invested.</p>
+    </div>
+
+    <!-- Month-to-month compare -->
+    <div class="card">
+        <div class="card-head wrap">
+            <h2 th:text="#{rep.compareTitle}">Compare two months</h2>
+        </div>
+        <form method="get" th:action="@{/reports}" class="compare-form">
+            <input type="hidden" name="year" th:value="${year}">
+            <div class="field">
+                <label for="ma" th:text="#{rep.monthA}">Month</label>
+                <input class="input" id="ma" type="month" name="a" th:value="${monthA}" required>
+            </div>
+            <div class="field">
+                <label for="mb" th:text="#{rep.monthB}">Compare with</label>
+                <input class="input" id="mb" type="month" name="b" th:value="${monthB}" required>
+            </div>
+            <button type="submit" class="btn secondary" th:text="#{rep.compare}">Compare</button>
+        </form>
+
+        <div class="table-wrap">
+            <table class="data compare-table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th class="num" th:text="${#temporals.format(monthA, 'MMM yyyy', #locale)}">Oct 2026</th>
+                    <th class="num" th:text="${#temporals.format(monthB, 'MMM yyyy', #locale)}">Nov 2026</th>
+                    <th class="num" th:text="#{rep.change}">Change</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="compare-sum">
+                    <th th:text="#{rep.income}">Income</th>
+                    <td class="num" th:text="${@fmt.baht(compare.summaryA.income)}">฿0</td>
+                    <td class="num" th:text="${@fmt.baht(compare.summaryB.income)}">฿0</td>
+                    <td class="num" th:with="d=${compare.summaryB.income.subtract(compare.summaryA.income)}"
+                        th:classappend="${@fmt.gain(d)}" th:text="${@fmt.signedBaht(d)}">฿0</td>
+                </tr>
+                <tr class="compare-sum">
+                    <th th:text="#{rep.outcome}">Outcome</th>
+                    <td class="num" th:text="${@fmt.baht(compare.summaryA.expense)}">฿0</td>
+                    <td class="num" th:text="${@fmt.baht(compare.summaryB.expense)}">฿0</td>
+                    <td class="num" th:with="d=${compare.summaryB.expense.subtract(compare.summaryA.expense)}"
+                        th:classappend="${d.signum() > 0} ? 'expense' : (${d.signum() < 0} ? 'income' : '')"
+                        th:text="${@fmt.signedBaht(d)}">฿0</td>
+                </tr>
+                <tr class="compare-sum">
+                    <th th:text="#{rep.remaining}">Remaining</th>
+                    <td class="num" th:text="${@fmt.baht(compare.summaryA.remaining)}">฿0</td>
+                    <td class="num" th:text="${@fmt.baht(compare.summaryB.remaining)}">฿0</td>
+                    <td class="num" th:with="d=${compare.summaryB.remaining.subtract(compare.summaryA.remaining)}"
+                        th:classappend="${@fmt.gain(d)}" th:text="${@fmt.signedBaht(d)}">฿0</td>
+                </tr>
+                </tbody>
+                <tbody th:each="ty : ${T(com.moneymgmt.domain.TxType).values()}" th:with="rows=${compare.of(ty)}"
+                       th:unless="${#lists.isEmpty(rows)}">
+                <tr class="compare-type"><th colspan="4" th:text="#{${'tx.type.' + ty}}">Expense</th></tr>
+                <tr th:each="r : ${rows}">
+                    <td>
+                        <span class="dot" th:classappend="${r.category.budgetGroup != null} ? ${'g-' + r.category.budgetGroup} : ${'g-' + r.type}"></span>
+                        <span th:text="${r.category.name(#locale)}">Eat</span>
+                    </td>
+                    <td class="num" th:text="${r.a.signum() == 0} ? '—' : ${@fmt.baht(r.a)}">฿0</td>
+                    <td class="num" th:text="${r.b.signum() == 0} ? '—' : ${@fmt.baht(r.b)}">฿0</td>
+                    <td class="num"
+                        th:classappend="${r.type.name() == 'INCOME'} ? ${@fmt.gain(r.diff)} : (${r.type.name() == 'EXPENSE' and r.diff.signum() > 0} ? 'expense' : (${r.type.name() == 'EXPENSE' and r.diff.signum() < 0} ? 'income' : ''))">
+                        <span th:text="${@fmt.signedBaht(r.diff)}">฿0</span>
+                        <span class="muted small" th:if="${r.diffPercent != null and r.diff.signum() != 0}"
+                              th:text="'(' + ${@fmt.signedPercent(r.diffPercent)} + ')'">(+10%)</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Downloads -->
+    <div class="card" id="export">
+        <div class="card-head"><h2 th:text="#{rep.exportTitle}">Download your data</h2></div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{rep.csv}">Transactions (CSV)</div>
+                <div class="muted small" th:text="#{rep.csv.desc}">Opens in Excel or Google Sheets.</div>
+            </div>
+            <div class="actions">
+                <a class="btn secondary small-btn" th:href="@{/reports/export/transactions.csv(year=${year})}" download>
+                    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#download}"/></svg>
+                    <span th:text="${year}">2026</span>
+                </a>
+                <a class="btn secondary small-btn" th:href="@{/reports/export/transactions.csv}" download>
+                    <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#download}"/></svg>
+                    <span th:text="#{rep.csv.all}">All</span>
+                </a>
+            </div>
+        </div>
+        <div class="setting-row">
+            <div>
+                <div th:text="#{rep.backup}">Full backup (Excel)</div>
+                <div class="muted small" th:text="#{rep.backup.desc}">Every table on its own sheet.</div>
+            </div>
+            <a class="btn secondary small-btn" th:href="@{/reports/export/backup.xlsx}" download>
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#download}"/></svg>
+                <span th:text="#{rep.download}">Download</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<th:block th:fragment="scripts">
+    <script th:src="@{/vendor/echarts-5.6.0.min.js}"></script>
+    <script th:src="@{/js/charts.js}"></script>
+    <script th:src="@{/js/reports.js}"></script>
+</th:block>
+</body>
+</html>

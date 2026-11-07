@@ -142,6 +142,34 @@ public class TransactionService {
         return plan;
     }
 
+    /** True when an entry can be turned into an installment plan: a positive expense, not a fixed cost or plan payment. */
+    public static boolean canSplit(Transaction t) {
+        return t.getType() == TxType.EXPENSE && t.getAmount().signum() > 0 && t.getInstallment() == null
+                && t.getRecurringItem() == null && t.getCategory().getBudgetGroup() != BudgetGroup.FIXED;
+    }
+
+    /**
+     * Credit card campaign ("0 % for 3 months"): each chosen purchase becomes its own 0 % plan of {@code months}
+     * payments. The entry keeps its date and becomes payment 1 (amount = price ÷ months); the app posts the
+     * other payments in the next months. Entries that cannot be split are skipped. Returns how many were split.
+     */
+    @Transactional
+    public int splitIntoInstallments(List<Long> ids, int months) {
+        if (months < 2 || months > 120) {
+            throw new IllegalArgumentException("months must be 2 to 120");
+        }
+        int done = 0;
+        for (Long id : ids) {
+            Transaction t = transactions.findWithDetailsById(id).orElse(null);
+            if (t == null || !canSplit(t)) {
+                continue;
+            }
+            saveAsInstallment(t, t.getAmount(), 1, months, null);
+            done++;
+        }
+        return done;
+    }
+
     /**
      * Deletes one transaction. If it was the latest payment of an installment plan, the plan's paid count
      * goes back by one (the app will not post that payment again by itself; use "Post" on Fixed costs).

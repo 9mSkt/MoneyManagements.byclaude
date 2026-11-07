@@ -17,14 +17,16 @@ import org.springframework.util.StringUtils;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, TotpAuthenticationProvider provider) throws Exception {
         http
+            .authenticationProvider(provider)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**", "/vendor/**", "/icons/**",
                         "/manifest.webmanifest", "/favicon.ico", "/error").permitAll()
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")
+                .authenticationDetailsSource(TotpAuthenticationProvider.DETAILS)
                 .defaultSuccessUrl("/", true)
                 .failureHandler((request, response, ex) -> {
                     String reason = ex instanceof org.springframework.security.authentication.LockedException
@@ -47,6 +49,12 @@ public class SecurityConfig {
                         + "frame-ancestors 'none'; form-action 'self'"))
                 .referrerPolicy(ref -> ref.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN)));
         return http.build();
+    }
+
+    @Bean
+    TotpAuthenticationProvider totpAuthenticationProvider(UserDetailsService users, PasswordEncoder encoder,
+                                                          TotpService totp) {
+        return new TotpAuthenticationProvider(users, encoder, totp);
     }
 
     @Bean

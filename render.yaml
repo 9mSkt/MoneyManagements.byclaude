@@ -1,0 +1,26 @@
+# Render Blueprint: one free web service built from the Dockerfile. Secrets are typed in the Render dashboard
+# (sync: false), never stored here.
+services:
+  - type: web
+    name: money-management
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_USERNAME
+        sync: false
+      - key: APP_PASSWORD_HASH
+        sync: false
+      - key: APP_TOTP_SECRET
+        sync: false
+      - key: GOOGLE_COPY_SHEET_ID
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false

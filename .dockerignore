@@ -1,0 +1,9 @@
+target/
+data/
+.env
+.git/
+.idea/
+.vscode/
+*.xlsx
+*.csv
+*.mv.db

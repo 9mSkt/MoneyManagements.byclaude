@@ -34,6 +34,24 @@ public class LayoutAdvice {
         return request.getRequestURI().substring(request.getContextPath().length());
     }
 
+    /**
+     * Link target for the EN/TH switch: this page with its query (e.g. ?month=2026-10) kept, ending ready for
+     * "lang=xx".
+     */
+    @ModelAttribute("langBase")
+    public String langBase(HttpServletRequest request) {
+        StringBuilder sb = new StringBuilder(request.getRequestURI()).append('?');
+        String query = request.getQueryString();
+        if (query != null) {
+            for (String part : query.split("&")) {
+                if (!part.isEmpty() && !part.startsWith("lang=") && !"lang".equals(part)) {
+                    sb.append(part).append('&');
+                }
+            }
+        }
+        return sb.toString();
+    }
+
     @ModelAttribute("sessionTimeoutSeconds")
     public long sessionTimeoutSeconds() {
         return sessionTimeoutSeconds;

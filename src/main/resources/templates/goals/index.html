@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{nav.goals}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack">
+
+    <div class="grid totals">
+        <div class="card kpi small">
+            <div class="label" th:text="#{goal.totalSaved}">Saved</div>
+            <div class="value amount income" th:text="${@fmt.baht(totalSaved)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{goal.totalTarget}">Target</div>
+            <div class="value amount" th:text="${@fmt.baht(totalTarget)}">฿0</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{goal.totalProgress}">Progress</div>
+            <div class="value amount" th:text="${@fmt.percent(totalPercent)}">0%</div>
+        </div>
+        <div class="card kpi small">
+            <div class="label" th:text="#{goal.perMonthAll}">To save per month</div>
+            <div class="value amount primary" th:text="${@fmt.baht(monthlyNeeded)}">฿0</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="#{goal.title}">Saving goals</h2>
+            <a class="btn small-btn" th:href="@{/goals/new}">
+                <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#plus}"/></svg>
+                <span th:text="#{goal.add}">Add goal</span>
+            </a>
+        </div>
+        <div class="empty muted" th:if="${#lists.isEmpty(goals)}">
+            <p th:text="#{goal.none}">No goals yet.</p>
+            <a class="btn" th:href="@{/goals/new}" th:text="#{goal.add}">Add goal</a>
+        </div>
+
+        <ul class="list goal-list">
+            <li th:each="g : ${goals}" th:with="left=${g.monthsLeft(today)}, need=${g.monthlyNeeded(today)}">
+                <div class="plan-top">
+                    <a class="title" th:href="@{/goals/{id}/edit(id=${g.id})}" th:text="${g.name}">Japan trip</a>
+                    <span class="amount">
+                        <strong th:classappend="${g.reached} ? 'income'" th:text="${@fmt.baht(g.savedAmount)}">฿0</strong>
+                        <span class="muted" th:text="'/ ' + ${@fmt.baht(g.targetAmount)}">/ ฿0</span>
+                    </span>
+                </div>
+                <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                     th:aria-valuenow="${g.progressPercent}" th:aria-label="${g.name}">
+                    <div class="fill" th:classappend="${g.reached} ? 'done' : (${g.isLate(today)} ? 'warn' : '')"
+                         th:style="'width:' + ${g.progressPercent} + '%'"></div>
+                </div>
+                <div class="sub plan-meta">
+                    <strong class="num" th:classappend="${g.reached} ? 'done-text'" th:text="${@fmt.percent(g.progressPercent)}">40%</strong>
+                    <span th:if="${g.reached}" class="done-text" th:text="#{goal.reached}">Reached</span>
+                    <span th:unless="${g.reached}" th:text="#{goal.left(${@fmt.baht(g.remaining)})}">฿0 to go</span>
+                    <span th:if="${g.deadline != null}" th:classappend="${g.isLate(today)} ? 'warning-text'"
+                          th:text="#{goal.by(${#temporals.format(g.deadline, 'd MMM yyyy', #locale)})}">by 1 Apr 2027</span>
+                    <span th:if="${need != null and left > 0}"
+                          th:text="#{goal.perMonth(${@fmt.baht(need)}, ${left})}">฿2,000 / month for 5 months</span>
+                    <span th:if="${g.isLate(today)}" class="warning-text" th:text="#{goal.late}">Deadline passed</span>
+                </div>
+                <div class="muted small goal-note" th:if="${g.note}" th:text="${g.note}">Note</div>
+
+                <form class="goal-money" method="post" th:action="@{/goals/{id}/money(id=${g.id})}">
+                    <div class="segmented mode-switch" role="radiogroup" th:aria-label="#{goal.money}">
+                        <label><input type="radio" name="direction" value="in" checked><span th:text="#{goal.in}">Add</span></label>
+                        <label><input type="radio" name="direction" value="out"><span th:text="#{goal.out}">Take out</span></label>
+                    </div>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <label class="sr-only" th:for="${'gm-' + g.id}" th:text="#{tx.amount}">Amount</label>
+                        <input class="input" th:id="${'gm-' + g.id}" name="amount" inputmode="decimal" required
+                               autocomplete="off" maxlength="20" th:placeholder="#{tx.amount}">
+                    </div>
+                    <button type="submit" class="btn secondary small-btn" th:text="#{tx.save}">Save</button>
+                    <label class="check small">
+                        <input type="checkbox" name="record" value="true">
+                        <span th:text="#{goal.record}">Also record as Deposit in Transactions</span>
+                    </label>
+                </form>
+            </li>
+        </ul>
+    </div>
+    <p class="muted small" th:text="#{goal.help}">Type the amount you put aside.</p>
+</section>
+</body>
+</html>

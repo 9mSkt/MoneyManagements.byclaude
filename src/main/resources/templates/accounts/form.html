@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(${form.id == null} ? #{acc.new} : #{acc.edit}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head">
+            <h2 th:text="${form.id == null} ? #{acc.new} : #{acc.edit}">New account</h2>
+            <a class="link-small" th:href="@{/accounts}" th:text="#{acc.back}">Back</a>
+        </div>
+        <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check.</div>
+
+        <form th:action="@{/accounts}" method="post" th:object="${form}">
+            <input type="hidden" th:field="*{id}">
+            <div class="field" th:classappend="${errors.containsKey('name')} ? 'has-error'">
+                <label for="name" th:text="#{acc.name}">Name</label>
+                <input class="input" id="name" th:field="*{name}" maxlength="100" required autocomplete="off"
+                       th:placeholder="#{acc.name.example}">
+                <div class="field-error" th:if="${errors.containsKey('name')}" th:text="#{${errors.get('name')}}">Error</div>
+            </div>
+            <div class="form-row">
+                <div class="field" th:classappend="${errors.containsKey('type')} ? 'has-error'">
+                    <label for="type" th:text="#{acc.typeLabel}">Type</label>
+                    <select class="input" id="type" th:field="*{type}">
+                        <option th:each="t : ${types}" th:value="${t}" th:text="#{${'acc.type.' + t}}">Bank</option>
+                    </select>
+                </div>
+                <div class="field" th:if="${form.id == null}" th:classappend="${errors.containsKey('balance')} ? 'has-error'">
+                    <label for="balance" th:text="#{acc.balanceToday}">Balance today</label>
+                    <div class="money-input">
+                        <span aria-hidden="true">฿</span>
+                        <input class="input" id="balance" th:field="*{balance}" inputmode="decimal" required autocomplete="off" maxlength="20">
+                    </div>
+                    <div class="field-error" th:if="${errors.containsKey('balance')}" th:text="#{${errors.get('balance')}}">Error</div>
+                </div>
+            </div>
+            <p class="muted small" th:text="#{acc.creditHelp}">For a credit card, type what you owe.</p>
+            <div class="field" th:classappend="${errors.containsKey('note')} ? 'has-error'">
+                <label for="note" th:text="#{tx.note}">Note</label>
+                <input class="input" id="note" th:field="*{note}" maxlength="300" autocomplete="off">
+                <div class="field-error" th:if="${errors.containsKey('note')}" th:text="#{${errors.get('note')}}">Error</div>
+            </div>
+            <label class="check">
+                <input type="checkbox" th:field="*{active}">
+                <span th:text="#{acc.active}">Count in net worth</span>
+            </label>
+            <div class="actions">
+                <button type="submit" class="btn" th:text="#{tx.save}">Save</button>
+                <a class="btn secondary" th:href="@{/accounts}" th:text="#{form.cancel}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" th:if="${!#lists.isEmpty(history)}">
+        <div class="card-head"><h2 th:text="#{acc.history}">Balance history</h2></div>
+        <ul class="list">
+            <li th:each="b : ${history}">
+                <div class="grow" th:text="${#temporals.format(b.date, 'd MMM yyyy', #locale)}">1 Nov 2026</div>
+                <span class="amount" th:text="${@fmt.baht(b.balance)}">฿0</span>
+                <form method="post" th:action="@{/accounts/balance/{bid}/delete(bid=${b.id})}"
+                      th:attr="data-confirm=#{acc.balance.deleteConfirm}">
+                    <button type="submit" class="icon-btn" th:title="#{tx.delete}" th:aria-label="#{tx.delete}">
+                        <svg class="icon" aria-hidden="true"><use th:href="@{/icons/sprite.svg#close}"/></svg>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <form th:if="${form.id != null}" class="card danger-zone" th:action="@{/accounts/{id}/delete(id=${form.id})}"
+          method="post" th:attr="data-confirm=#{acc.delete.confirm}">
+        <div class="grow">
+            <strong th:text="#{acc.delete}">Delete account</strong>
+            <div class="muted small" th:text="#{acc.delete.desc}">Its balance history is deleted too.</div>
+        </div>
+        <button type="submit" class="btn danger" th:text="#{tx.delete}">Delete</button>
+    </form>
+</section>
+</body>
+</html>

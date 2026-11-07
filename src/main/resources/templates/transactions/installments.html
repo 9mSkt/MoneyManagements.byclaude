@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(#{split.title}, ~{::content}, ~{})}">
+<body>
+<section th:fragment="content" class="stack narrow">
+    <div class="card">
+        <div class="card-head wrap">
+            <h2 th:text="#{split.title}">Pay in installments</h2>
+            <nav class="month-nav" th:aria-label="#{tx.month}">
+                <a class="icon-btn" th:href="@{/transactions/installments(month=${month.minusMonths(1)})}"
+                   th:aria-label="#{tx.month.prev}" th:title="#{tx.month.prev}">‹</a>
+                <strong class="month-label" th:text="${#temporals.format(month, 'MMMM yyyy', #locale)}">November 2026</strong>
+                <a class="icon-btn" th:href="@{/transactions/installments(month=${month.plusMonths(1)})}"
+                   th:aria-label="#{tx.month.next}" th:title="#{tx.month.next}">›</a>
+            </nav>
+        </div>
+        <p class="muted small" th:text="#{split.intro}">Tick the purchases in the 0% campaign.</p>
+
+        <div class="empty muted" th:if="${#lists.isEmpty(rows)}" th:text="#{split.none}">No purchases this month.</div>
+
+        <form th:unless="${#lists.isEmpty(rows)}" th:action="@{/transactions/installments}" method="post" data-split-form>
+            <input type="hidden" name="month" th:value="${month}">
+            <ul class="list split-list">
+                <li th:each="t : ${rows}">
+                    <label class="split-row">
+                        <input type="checkbox" name="ids" th:value="${t.id}" th:attr="data-amount=${t.amount}">
+                        <span class="dot" th:classappend="${@fmt.dot(t)}"></span>
+                        <span class="grow">
+                            <span class="title" th:text="${t.description ?: t.category.name(#locale)}">Sushi</span>
+                            <span class="sub" th:text="${#temporals.format(t.date, 'd MMM', #locale)} + ' · ' + ${t.category.name(#locale)}">5 Nov · Eat</span>
+                        </span>
+                        <span class="amount expense" th:text="${@fmt.baht(t.amount)}">฿0</span>
+                    </label>
+                </li>
+            </ul>
+
+            <div class="split-foot">
+                <div class="field">
+                    <label for="months" th:text="#{split.months}">Months</label>
+                    <select class="input" id="months" name="months">
+                        <option th:each="m : ${ {3, 4, 6, 10, 12} }" th:value="${m}" th:text="#{split.monthsOption(${m})}"
+                                th:selected="${m == 3}">3 months</option>
+                    </select>
+                </div>
+                <div class="split-summary muted small" aria-live="polite">
+                    <span th:text="#{split.selected}">Selected</span>:
+                    <strong class="amount" data-split-total>฿0.00</strong>
+                    · <span th:text="#{split.perMonth}">per month</span>
+                    <strong class="amount" data-split-monthly>฿0.00</strong>
+                </div>
+                <button type="submit" class="btn" th:text="#{split.submit}">Make 0% plans</button>
+            </div>
+            <p class="muted small" th:text="#{split.how}">Each purchase becomes its own plan.</p>
+        </form>
+    </div>
+    <a class="link-small" th:href="@{/transactions(month=${month})}" th:text="#{split.back}">Back to transactions</a>
+</section>
+</body>
+</html>

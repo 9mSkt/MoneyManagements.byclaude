@@ -38,6 +38,12 @@ server:
 app:
   username: ${APP_USERNAME:}
   password-hash: ${APP_PASSWORD_HASH:}
+  # Optional two-step sign-in (authenticator app). Create a secret with: totp-secret
+  totp-secret: ${APP_TOTP_SECRET:}
+  google:
+    # Daily copy of all data to a separate Google Sheet (optional). See README, "Daily Google Sheet copy".
+    sheet-id: ${GOOGLE_COPY_SHEET_ID:}
+    credentials-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
   security:
     max-failed-logins: 5
     lockout-minutes: 15
