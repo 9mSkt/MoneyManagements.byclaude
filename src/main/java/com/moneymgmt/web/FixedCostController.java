@@ -211,6 +211,32 @@ public class FixedCostController {
         return "redirect:/fixed-costs";
     }
 
+    /** Change the number of months; payments already in the app get the new monthly amount. */
+    @PostMapping("/installments/{id}/revise")
+    public String revisePlan(@PathVariable Long id, @RequestParam(defaultValue = "0") int months, RedirectAttributes flash) {
+        Installment p = plans.findById(id).orElseThrow(TransactionController::notFound);
+        if (months < 1 || months > 120) {
+            flash.addFlashAttribute("flashError", "inst.error.months");
+            return "redirect:/fixed-costs/installments/" + id + "/edit";
+        }
+        if (months != p.getMonths()) {
+            txService.revisePlan(id, months);
+            posting.recheck();
+        }
+        flash.addFlashAttribute("flash", "inst.revised");
+        return "redirect:/fixed-costs/installments/" + id + "/edit";
+    }
+
+    /** Cancel the plan: back to one purchase at the full price; the other payments are removed. */
+    @PostMapping("/installments/{id}/cancel")
+    public String cancelPlan(@PathVariable Long id, RedirectAttributes flash) {
+        plans.findById(id).orElseThrow(TransactionController::notFound);
+        Transaction kept = txService.cancelPlan(id);
+        flash.addFlashAttribute("flash", "inst.cancelled");
+        return kept == null ? "redirect:/fixed-costs"
+                : "redirect:/transactions?month=" + YearMonth.from(kept.getDate());
+    }
+
     private String planForm(InstallmentForm f, Map<String, String> errors, Installment existing, Model model) {
         model.addAttribute("form", f);
         model.addAttribute("errors", errors);

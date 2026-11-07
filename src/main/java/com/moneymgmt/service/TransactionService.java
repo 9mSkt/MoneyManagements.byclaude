@@ -171,6 +171,69 @@ public class TransactionService {
     }
 
     /**
+     * Cancels an installment plan: the first payment entry goes back to one normal purchase at the full price
+     * (plus any card fee it had), the other payments in the app are deleted, and the plan is removed.
+     * Returns the entry that remains, or null when the plan had no payments in the app (then it is only deleted).
+     */
+    @Transactional
+    public Transaction cancelPlan(Long planId) {
+        Installment plan = installments.findById(planId).orElse(null);
+        if (plan == null) {
+            return null;
+        }
+        List<Transaction> paid = transactions.findByInstallmentOrderByDateAscIdAsc(plan);
+        Transaction first = null;
+        for (Transaction t : paid) {
+            if (first == null) {
+                first = t;
+            } else {
+                transactions.delete(t);
+            }
+        }
+        if (first != null) {
+            BigDecimal fee = first.getFee() == null ? Money.zero() : first.getFee();
+            first.setAmount(Money.scale(plan.getFullPrice().add(fee)));
+            first.setInstallment(null);
+            first.setInstallmentNo(null);
+            transactions.save(first);
+        }
+        installments.delete(plan);
+        return first;
+    }
+
+    /**
+     * Changes how many months a plan runs (e.g. 3 → 6). The monthly payment is worked out again from the full
+     * price and the plan's interest; payments already in the app get the new amount (their card fee is kept),
+     * and payments beyond the new number of months are deleted. Later payments are posted as usual.
+     */
+    @Transactional
+    public Installment revisePlan(Long planId, int months) {
+        if (months < 1 || months > 120) {
+            throw new IllegalArgumentException("months must be 1 to 120");
+        }
+        Installment plan = installments.findById(planId).orElseThrow();
+        BigDecimal monthly = Installment.monthlyCharge(plan.getFullPrice(), months, plan.getInterestPercent());
+        for (Transaction t : transactions.findByInstallmentOrderByDateAscIdAsc(plan)) {
+            Integer no = t.getInstallmentNo();
+            if (no != null && no > months) {
+                transactions.delete(t);
+                continue;
+            }
+            BigDecimal fee = t.getFee() == null ? Money.zero() : t.getFee();
+            t.setAmount(Money.scale(monthly.add(fee)));
+            transactions.save(t);
+        }
+        plan.setMonths(months);
+        plan.setMonthlyAmount(monthly);
+        plan.setPaidCount(Math.min(plan.getPaidCount(), months));
+        java.time.LocalDate lastMonth = plan.getEndMonth();
+        if (plan.getLastPostedMonth() != null && plan.getLastPostedMonth().isAfter(lastMonth)) {
+            plan.setLastPostedMonth(lastMonth);
+        }
+        return installments.save(plan);
+    }
+
+    /**
      * Deletes one transaction. If it was the latest payment of an installment plan, the plan's paid count
      * goes back by one (the app will not post that payment again by itself; use "Post" on Fixed costs).
      */

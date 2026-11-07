@@ -205,6 +205,8 @@ public class TransactionController {
                 .stream().filter(TransactionService::canSplit).toList();
         model.addAttribute("month", ym);
         model.addAttribute("rows", rows);
+        model.addAttribute("started", plans.findAllForList().stream()
+                .filter(p -> YearMonth.from(p.getStartMonth()).equals(ym)).toList());
         return "transactions/installments";
     }
 

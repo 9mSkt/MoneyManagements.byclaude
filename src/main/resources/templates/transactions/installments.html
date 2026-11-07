@@ -53,6 +53,20 @@
             <p class="muted small" th:text="#{split.how}">Each purchase becomes its own plan.</p>
         </form>
     </div>
+    <div class="card" th:unless="${#lists.isEmpty(started)}">
+        <div class="card-head"><h2 th:text="#{split.started}">Plans started this month</h2></div>
+        <p class="muted small" th:text="#{split.startedHelp}">Open a plan to change its months or cancel it.</p>
+        <ul class="list">
+            <li th:each="p : ${started}">
+                <div class="grow">
+                    <a class="title" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})} + '#change'" th:text="${p.item}">TV</a>
+                    <div class="sub" th:text="#{split.planLine(${@fmt.baht(p.fullPrice)}, ${p.months}, ${@fmt.baht(p.monthlyAmount)})}">฿9,000 · 3 months · ฿3,000 / month</div>
+                </div>
+                <a class="btn secondary small-btn" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})} + '#change'"
+                   th:text="#{inst.change.link}">Change or cancel</a>
+            </li>
+        </ul>
+    </div>
     <a class="link-small" th:href="@{/transactions(month=${month})}" th:text="#{split.back}">Back to transactions</a>
 </section>
 </body>

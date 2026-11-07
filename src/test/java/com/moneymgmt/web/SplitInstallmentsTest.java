@@ -70,8 +70,63 @@ class SplitInstallmentsTest extends AbstractWebTest {
 
         // Already split: no longer offered.
         mvc.perform(get("/transactions/installments").param("month", "2032-04"))
-                .andExpect(content().string(not(containsString("Sample TV"))))
+                .andExpect(content().string(not(containsString("name=\"ids\" value=\"" + tv.getId() + "\""))))
                 .andExpect(content().string(containsString("Sample socks")));
+    }
+
+    @Autowired com.moneymgmt.service.PostingService posting;
+    @Autowired com.moneymgmt.repo.InstallmentRepository plans;
+
+    @Test
+    void planCanBeRevisedAndCancelled() throws Exception {
+        Transaction tv = tx(LocalDate.of(2032, 6, 9), "SHOPPING", "9000", "Sample TV");
+        mvc.perform(post("/transactions/installments").with(csrf()).param("month", "2032-06").param("months", "3")
+                .param("ids", tv.getId().toString())).andExpect(redirectedUrl("/transactions?month=2032-06"));
+        Long planId = transactions.findWithDetailsById(tv.getId()).orElseThrow().getInstallment().getId();
+        posting.postPlan(planId, java.time.YearMonth.of(2032, 7));   // payment 2/3
+        var plan = plans.findById(planId).orElseThrow();
+        assertThat(transactions.findByInstallmentOrderByDateAscIdAsc(plan)).hasSize(2);
+
+        mvc.perform(get("/transactions/installments").param("month", "2032-06").param("lang", "en"))
+                .andExpect(content().string(containsString("Plans started this month")));
+        mvc.perform(get("/transactions/{id}/edit", tv.getId()).param("lang", "en"))
+                .andExpect(content().string(containsString("Change or cancel")));
+        mvc.perform(get("/fixed-costs/installments/{id}/edit", planId).param("lang", "en"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Cancel installments")));
+
+        // 3 → 6 months: both payments become 1,500.
+        mvc.perform(post("/fixed-costs/installments/{id}/revise", planId).with(csrf()).param("months", "6"))
+                .andExpect(redirectedUrl("/fixed-costs/installments/" + planId + "/edit"));
+        plan = plans.findById(planId).orElseThrow();
+        assertThat(plan.getMonths()).isEqualTo(6);
+        assertThat(plan.getMonthlyAmount()).isEqualByComparingTo("1500");
+        assertThat(transactions.findByInstallmentOrderByDateAscIdAsc(plan))
+                .hasSize(2).allSatisfy(t -> assertThat(t.getAmount()).isEqualByComparingTo("1500"));
+
+        // 6 → 1 month: payment 2 is removed, payment 1 is the full price.
+        mvc.perform(post("/fixed-costs/installments/{id}/revise", planId).with(csrf()).param("months", "1"));
+        plan = plans.findById(planId).orElseThrow();
+        assertThat(plan.getPaidCount()).isEqualTo(1);
+        assertThat(transactions.findByInstallmentOrderByDateAscIdAsc(plan)).singleElement()
+                .satisfies(t -> assertThat(t.getAmount()).isEqualByComparingTo("9000"));
+
+        // Back to 3 months with payment 2 posted again, then cancel.
+        mvc.perform(post("/fixed-costs/installments/{id}/revise", planId).with(csrf()).param("months", "3"));
+        posting.postPlan(planId, java.time.YearMonth.of(2032, 7));
+        mvc.perform(post("/fixed-costs/installments/{id}/cancel", planId).with(csrf()))
+                .andExpect(redirectedUrl("/transactions?month=2032-06"))
+                .andExpect(flash().attribute("flash", "inst.cancelled"));
+        assertThat(plans.findById(planId)).isEmpty();
+        Transaction back = transactions.findWithDetailsById(tv.getId()).orElseThrow();
+        assertThat(back.getAmount()).isEqualByComparingTo("9000");
+        assertThat(back.getInstallment()).isNull();
+        assertThat(back.getInstallmentNo()).isNull();
+        assertThat(transactions.findByDateBetweenOrderByDateAscIdAsc(LocalDate.of(2032, 7, 1), LocalDate.of(2032, 7, 31)))
+                .noneMatch(t -> "Sample TV".equals(t.getDescription()));
+        // It can be split again.
+        mvc.perform(get("/transactions/installments").param("month", "2032-06"))
+                .andExpect(content().string(containsString("name=\"ids\" value=\"" + tv.getId() + "\"")));
     }
 
     @Test

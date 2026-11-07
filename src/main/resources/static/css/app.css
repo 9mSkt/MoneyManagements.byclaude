@@ -576,3 +576,10 @@ a.value.amount:hover { text-decoration: none; }
 .split-summary { flex: 1; min-width: 200px; padding-bottom: 10px; }
 .compare-form .input { width: 100%; min-width: 0; }
 .compare-form { justify-content: start; }
+/* Change or cancel an installment plan */
+.revise-form { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.revise-form .field { margin: 0; }
+.revise-form .input { width: 120px; height: 44px; }
+.revise-form .btn { height: 44px; }
+.cancel-plan { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.info-list li a { margin-left: 6px; font-weight: 500; }

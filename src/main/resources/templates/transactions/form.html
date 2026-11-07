@@ -13,8 +13,11 @@
         <div class="alert error" th:if="${!#maps.isEmpty(errors)}" th:text="#{form.error.check}" role="alert">Check the fields.</div>
 
         <ul class="info-list" th:if="${existing != null}">
-            <li th:if="${existing.installment != null}"
-                th:text="#{tx.info.installment(${existing.installment.item}, ${existing.installmentNo}, ${existing.installment.months})}">Installment</li>
+            <li th:if="${existing.installment != null}">
+                <span th:text="#{tx.info.installment(${existing.installment.item}, ${existing.installmentNo}, ${existing.installment.months})}">Installment</span>
+                <a th:href="@{/fixed-costs/installments/{id}/edit(id=${existing.installment.id})} + '#change'"
+                   th:text="#{inst.change.link}">Change or cancel</a>
+            </li>
             <li th:if="${existing.recurringItem != null}"
                 th:text="#{tx.info.recurring(${existing.recurringItem.name})}">Fixed cost</li>
             <li th:if="${existing.kpiPercent != null or existing.incentivePercent != null}">

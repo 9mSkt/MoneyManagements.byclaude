@@ -104,6 +104,32 @@
         </ul>
     </div>
 
+    <!-- Change or cancel: for a card campaign plan that changed, or one made by mistake -->
+    <div class="card" id="change" th:if="${existing != null}"
+         th:with="entries=${#lists.size(schedule.?[status == 'paid'])}">
+        <div class="card-head"><h2 th:text="#{inst.change.title}">Change or cancel</h2></div>
+        <form class="revise-form" method="post" th:action="@{/fixed-costs/installments/{id}/revise(id=${existing.id})}">
+            <div class="field">
+                <label for="revise-months" th:text="#{inst.change.months}">Number of months</label>
+                <input class="input" id="revise-months" type="number" name="months" min="1" max="120"
+                       th:value="${existing.months}" required>
+            </div>
+            <button type="submit" class="btn secondary" th:text="#{inst.change.submit}">Change months</button>
+        </form>
+        <p class="muted small" th:text="#{inst.change.help(${@fmt.baht(existing.fullPrice)})}">New monthly payment = full price ÷ months.</p>
+
+        <form class="danger-zone cancel-plan" method="post" th:action="@{/fixed-costs/installments/{id}/cancel(id=${existing.id})}"
+              th:attr="data-confirm=#{inst.cancel.confirm(${@fmt.baht(existing.fullPrice)})}">
+            <div class="grow">
+                <strong th:text="#{inst.cancel}">Cancel installments</strong>
+                <div class="muted small" th:if="${entries > 0}"
+                     th:text="#{inst.cancel.desc(${@fmt.baht(existing.fullPrice)}, ${entries - 1})}">Back to one purchase.</div>
+                <div class="muted small" th:if="${entries == 0}" th:text="#{inst.cancel.descNone}">No payments in the app; the plan is removed.</div>
+            </div>
+            <button type="submit" class="btn danger" th:text="#{inst.cancel}">Cancel installments</button>
+        </form>
+    </div>
+
     <form th:if="${form.id != null}" class="card danger-zone" th:action="@{/fixed-costs/installments/{id}/delete(id=${form.id})}"
           method="post" th:attr="data-confirm=#{inst.delete.confirm}">
         <div class="grow">
