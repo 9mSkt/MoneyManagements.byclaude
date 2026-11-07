@@ -629,3 +629,20 @@ a.value.amount:hover { text-decoration: none; }
   .cat-card { padding: 10px 12px; }
   .cat-card:not([open]) .track.thin { margin-top: 8px; }
 }
+/* Group cards: each card wears its budget group colour (the same colours as the dots and charts). */
+.cat-card { border-left: 4px solid var(--gc, var(--border)); }
+.gc-INCOME { --gc: var(--income); }
+.gc-FIXED { --gc: var(--g-fixed); }
+.gc-GAS { --gc: var(--g-gas); }
+.gc-NECESSARY { --gc: var(--g-necessary); }
+.gc-SHOPPING { --gc: var(--g-shopping); }
+.gc-EAT { --gc: var(--g-eat); }
+.gc-SAVING { --gc: var(--g-saving); }
+.gc-INVESTMENT, .gc-TRANSFER { --gc: var(--g-investment); }
+.gc-EXPENSE { --gc: var(--expense); }
+.cat-card .cat-head { background: color-mix(in srgb, var(--gc, transparent) 10%, transparent); margin: -10px -12px 0; padding: 10px 12px; border-radius: var(--radius) var(--radius) 0 0; }
+.cat-card:not([open]) .cat-head { border-radius: var(--radius); }
+.cat-card .track.thin .fill { background: var(--gc, var(--primary)); }
+.cat-card.has-over { box-shadow: var(--shadow); }
+.cat-card.has-over .over-chip { box-shadow: inset 0 0 0 1px var(--over); }
+@media (min-width: 641px) { .cat-card .cat-head { margin: -14px -16px 0; padding: 14px 16px; } }

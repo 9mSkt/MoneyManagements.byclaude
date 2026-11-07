@@ -34,30 +34,34 @@ class TransactionCardsTest extends AbstractWebTest {
     }
 
     @Test
-    void cardsGroupByCategoryWithTotalsAndShare() {
+    void cardsGroupByBudgetGroupWithTotalsAndShare() {
         var rows = List.of(
                 tx(LocalDate.of(2033, 3, 9), "EAT_LIFESTYLE", "300", "Sample lunch"),
                 tx(LocalDate.of(2033, 3, 8), "SHOPPING", "700", "Sample shirt"),
-                tx(LocalDate.of(2033, 3, 7), "EAT_LIFESTYLE", "200", "Sample coffee"),
-                tx(LocalDate.of(2033, 3, 1), "SALARY", "40000", "Sample salary"));
-        var cards = TransactionController.CategoryCard.of(rows, Set.of(rows.get(1).getId()));
-        assertThat(cards).extracting(c -> c.category().getCode()).containsExactly("SALARY", "SHOPPING", "EAT_LIFESTYLE");
-        var eat = cards.get(2);
-        assertThat(eat.total()).isEqualByComparingTo("500");
-        assertThat(eat.share()).isEqualByComparingTo("41.67");   // of 1,200 spent
-        assertThat(eat.rows()).extracting(Transaction::getDescription).containsExactly("Sample lunch", "Sample coffee");
-        assertThat(cards.get(1).over()).isEqualTo(1);
+                tx(LocalDate.of(2033, 3, 6), "RENT", "8000", "Sample rent"),
+                tx(LocalDate.of(2033, 3, 5), "ELECTRICITY", "1000", "Sample bill"),
+                tx(LocalDate.of(2033, 3, 1), "SALARY", "40000", "Sample salary"),
+                tx(LocalDate.of(2033, 3, 1), "BONUS", "10000", "Sample bonus"));
+        var cards = TransactionController.GroupCard.of(rows, Set.of(rows.get(1).getId()));
+        assertThat(cards).extracting(TransactionController.GroupCard::key)
+                .containsExactly("INCOME", "FIXED", "SHOPPING", "EAT");
+        var fixed = cards.get(1);
+        assertThat(fixed.rows()).extracting(Transaction::getDescription).containsExactly("Sample rent", "Sample bill");
+        assertThat(fixed.total()).isEqualByComparingTo("9000");
+        assertThat(fixed.share()).isEqualByComparingTo("90");   // of 10,000 spent
+        assertThat(cards.get(0).total()).isEqualByComparingTo("50000");
         assertThat(cards.get(0).type()).isEqualTo(TxType.INCOME);
+        assertThat(cards.get(2).over()).isEqualTo(1);
     }
 
     @Test
-    void longCategoriesShowFourThenMore() {
-        for (int d = 1; d <= 6; d++) {
+    void longGroupsShowFiveThenMore() {
+        for (int d = 1; d <= 7; d++) {
             tx(LocalDate.of(2033, 4, d), "GASOLINE", "100", "Sample fuel " + d);
         }
-        var card = TransactionController.CategoryCard.of(
+        var card = TransactionController.GroupCard.of(
                 transactions.findByDateBetweenOrderByDateAscIdAsc(LocalDate.of(2033, 4, 1), LocalDate.of(2033, 4, 30)), Set.of()).get(0);
-        assertThat(card.first()).hasSize(4);
+        assertThat(card.first()).hasSize(5);
         assertThat(card.rest()).hasSize(2);
     }
 
@@ -68,7 +72,7 @@ class TransactionCardsTest extends AbstractWebTest {
         mvc.perform(get("/transactions?month=2033-05&lang=en"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("class=\"card cat-card")))
-                .andExpect(content().string(containsString("By category")))
+                .andExpect(content().string(containsString("By group")))
                 .andExpect(content().string(containsString("Sample shirt")))
                 .andExpect(content().string(not(containsString("class=\"tx-date\""))));
         mvc.perform(get("/transactions?month=2033-05&view=date&lang=en"))

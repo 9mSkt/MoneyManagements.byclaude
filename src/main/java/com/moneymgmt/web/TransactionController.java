@@ -35,13 +35,14 @@ public class TransactionController {
     private final com.moneymgmt.repo.InstallmentRepository plans;
 
     /**
-     * One card of the "By category" view: a category with its total, its share of all entries of the same type,
-     * and its entries (newest first).
+     * One card of the "By group" view: every entry of one budget group (one colour), e.g. Fixed cost holds rent,
+     * car payment, Mom and the bills; income is one card. Total, share of all entries of the same type, and the
+     * entries (newest first).
      */
-    public record CategoryCard(Category category, TxType type, java.math.BigDecimal total, java.math.BigDecimal share,
-                               List<Transaction> rows, int over) {
+    public record GroupCard(String key, BudgetGroup group, TxType type, java.math.BigDecimal total,
+                            java.math.BigDecimal share, List<Transaction> rows, int over) {
         /** Entries shown before "Show more". */
-        public static final int VISIBLE = 4;
+        public static final int VISIBLE = 5;
 
         public List<Transaction> first() {
             return rows.subList(0, Math.min(VISIBLE, rows.size()));
@@ -51,30 +52,35 @@ public class TransactionController {
             return rows.size() <= VISIBLE ? List.of() : rows.subList(VISIBLE, rows.size());
         }
 
-        /** Cards ordered income, expense, saving/investing, then by the category order used everywhere else. */
-        static List<CategoryCard> of(List<Transaction> rows, java.util.Set<Long> overIds) {
-            Map<Long, List<Transaction>> byCat = new LinkedHashMap<>();
-            Map<Long, Category> cats = new LinkedHashMap<>();
+        /** Cards ordered: income, then the budget groups in their usual order (fixed, gas, ... saving, investment). */
+        static List<GroupCard> of(List<Transaction> rows, java.util.Set<Long> overIds) {
+            Map<String, List<Transaction>> byKey = new LinkedHashMap<>();
             Map<TxType, java.math.BigDecimal> typeTotals = new java.util.EnumMap<>(TxType.class);
             for (Transaction t : rows) {
-                byCat.computeIfAbsent(t.getCategory().getId(), k -> new java.util.ArrayList<>()).add(t);
-                cats.putIfAbsent(t.getCategory().getId(), t.getCategory());
+                BudgetGroup g = t.getCategory().getBudgetGroup();
+                byKey.computeIfAbsent(g != null ? g.name() : t.getType().name(), k -> new java.util.ArrayList<>()).add(t);
                 typeTotals.merge(t.getType(), t.getAmount(), java.math.BigDecimal::add);
             }
-            List<CategoryCard> out = new java.util.ArrayList<>();
-            byCat.forEach((id, list) -> {
+            List<GroupCard> out = new java.util.ArrayList<>();
+            byKey.forEach((key, list) -> {
                 TxType type = list.get(0).getType();
+                BudgetGroup group = list.get(0).getCategory().getBudgetGroup();
                 java.math.BigDecimal total = list.stream().map(Transaction::getAmount)
                         .reduce(com.moneymgmt.util.Money.zero(), java.math.BigDecimal::add);
                 java.math.BigDecimal share = com.moneymgmt.util.Money.percent(total, typeTotals.get(type))
                         .max(java.math.BigDecimal.ZERO).min(java.math.BigDecimal.valueOf(100));
                 int over = (int) list.stream().filter(t -> overIds.contains(t.getId())).count();
-                out.add(new CategoryCard(cats.get(id), type, total, share, list, over));
+                out.add(new GroupCard(key, group, type, total, share, list, over));
             });
-            out.sort(java.util.Comparator.comparingInt((CategoryCard c) -> c.type() == TxType.INCOME ? 0
-                            : c.type() == TxType.EXPENSE ? 1 : 2)
-                    .thenComparingInt(c -> c.category().getSortOrder()));
+            out.sort(java.util.Comparator.comparingInt(GroupCard::order));
             return out;
+        }
+
+        private int order() {
+            if (group != null) {
+                return 1 + group.ordinal();
+            }
+            return type == TxType.INCOME ? 0 : 100 + type.ordinal();
         }
     }
 
@@ -124,7 +130,7 @@ public class TransactionController {
         model.addAttribute("overIds", overIds);
         boolean byDate = "date".equals(view);
         model.addAttribute("byDate", byDate);
-        model.addAttribute("cards", byDate ? List.of() : CategoryCard.of(result.rows(), overIds));
+        model.addAttribute("cards", byDate ? List.of() : GroupCard.of(result.rows(), overIds));
         model.addAttribute("filterQuery", filterQuery(filter) + (byDate ? "&view=date" : ""));
         model.addAttribute("baseQuery", "?month=" + (allMonths ? "all" : ym) + filterQuery(filter));
         // Entries that pushed a group over this month's actual budget are shown in red.

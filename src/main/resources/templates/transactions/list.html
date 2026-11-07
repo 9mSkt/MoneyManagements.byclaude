@@ -165,18 +165,18 @@
         <!-- By category: one card per category. On a phone the cards start closed (just name and total). -->
         <div class="cat-cards" th:unless="${byDate or #lists.isEmpty(result.rows)}">
             <details class="card cat-card" th:each="c : ${cards}" open data-phone-closed
-                     th:classappend="${c.over > 0} ? 'has-over'">
+                     th:classappend="${'gc-' + c.key} + ${c.over > 0 ? ' has-over' : ''}">
                 <summary class="cat-head">
-                    <span class="dot" th:classappend="${c.category.budgetGroup != null} ? ${'g-' + c.category.budgetGroup} : ${'g-' + c.type}"></span>
+                    <span class="dot" th:classappend="${'g-' + c.key}"></span>
                     <span class="cat-name">
-                        <strong th:text="${c.category.name(#locale)}">Eat / Lifestyle</strong>
+                        <strong th:text="${c.group != null} ? #{${'group.' + c.group}} : #{${'tx.type.' + c.type}}">Eat / Lifestyle</strong>
                         <span class="sub" th:text="#{tx.cards.count(${#lists.size(c.rows)}, ${@fmt.percent(c.share)})}">5 entries · 30%</span>
                     </span>
                     <span class="chip over-chip" th:if="${c.over > 0}" th:text="#{tx.cards.over(${c.over})}">1 over</span>
                     <span class="amount cat-total" th:classappend="${@fmt.kind(c.type)}" th:text="${@fmt.baht(c.total)}">฿0</span>
                 </summary>
                 <div class="track thin" aria-hidden="true">
-                    <div class="fill" th:classappend="${'kind-' + @fmt.kind(c.type)}" th:style="'width:' + ${c.share} + '%'"></div>
+                    <div class="fill" th:classappend="${'gfill-' + c.key}" th:style="'width:' + ${c.share} + '%'"></div>
                 </div>
                 <ul class="tx-list compact">
                     <li th:each="t : ${c.first()}"><a th:replace="~{transactions/list :: txRow(${t}, true)}"></a></li>
@@ -210,7 +210,7 @@
     <div class="grow">
         <div class="title" th:text="${t.description ?: t.category.name(#locale)}">Lunch</div>
         <div class="sub">
-            <span th:if="${compact}" th:text="${#temporals.format(t.date, 'EEE d MMM', #locale)}">Mon 2 Nov</span>
+            <span th:if="${compact}" th:text="${#temporals.format(t.date, 'EEE d MMM', #locale)} + ' · ' + ${t.category.name(#locale)}">Mon 2 Nov · Car</span>
             <span th:unless="${compact}" th:text="${t.category.name(#locale)}">Eat</span>
             <span class="chip" th:if="${t.installment != null and t.installmentNo != null}"
                   th:text="${t.installmentNo + '/' + t.installment.months}">3/10</span>
