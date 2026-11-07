@@ -61,7 +61,6 @@ All secrets come from environment variables (local `.env`, or the Render dashboa
 | `APP_TOTP_SECRET` | no | Turns on the two-step code at sign-in (see below) |
 | `GOOGLE_COPY_SHEET_ID` | no | The separate Google Sheet that receives the daily copy |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | no | Key of the Google service account that writes the copy (the JSON as is, or base64) |
-| `EXPORT_TOKEN` | no | Secret key the yearly Google Drive script uses to fetch the Excel file (32+ characters, from `export-token`) |
 
 ## Deploy online (Render + Neon, free)
 
@@ -105,26 +104,6 @@ never touched. Setup, once:
 
 **Settings → Daily copy** shows the last copy and any error, and has a *Copy now* button. Because the free app sleeps,
 the copy runs the first time the app is awake each day (it checks every hour).
-
-## Yearly copy to Google Drive
-
-Every January a small Google Apps Script in your own Google account downloads last year's Excel file (a Summary
-sheet and one sheet per month) from the app and saves it in your Drive folder. It runs as you, so the file is yours.
-The app must be online (Render) for this; the script cannot reach `localhost`.
-
-1. Create a key: `.mvnw.cmd -q spring-boot:run "-Dspring-boot.run.arguments=export-token"` and set
-   `EXPORT_TOKEN` in Render to it.
-2. Open https://script.google.com, choose *New project*, delete the sample code and paste the contents of
-   [`docs/google-drive-yearly-export.gs`](docs/google-drive-yearly-export.gs). Name the project
-   "Money Management export".
-3. *Project Settings* (gear icon): set *Time zone* to `(GMT+07:00) Bangkok`, then under *Script Properties* add
-   `APP_URL` (your `https://….onrender.com` address), `EXPORT_TOKEN` (same as in Render) and `FOLDER_ID` (your Drive
-   folder link as you copied it, e.g. `https://drive.google.com/drive/folders/…?usp=sharing`; the ID alone works too). Optional: `LANG` = `th` for Thai labels.
-4. Back in the editor, pick `setup` and press *Run*; allow the permissions it asks for (Drive and external
-   requests). Then run `testNow`: a file for this year appears in the folder.
-
-**Settings → Yearly copy to Google Drive** shows when the script last fetched a file. To send a year by hand, use
-**Reports → Download your data → Transactions by month (Excel)**.
 
 ## Two-step sign-in (optional)
 

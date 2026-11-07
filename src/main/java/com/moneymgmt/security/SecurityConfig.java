@@ -23,8 +23,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**", "/vendor/**", "/icons/**",
                         "/manifest.webmanifest", "/favicon.ico", "/error").permitAll()
-                // The yearly export for the Google Drive script checks its own secret token (ExportApiController).
-                .requestMatchers("/api/export/**").permitAll()
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")

@@ -37,12 +37,6 @@ public class MoneyApplication {
                 System.out.println("Or open this link on the phone: otpauth://totp/Money%20Management?secret=" + secret
                         + "&issuer=Money%20Management");
             }
-            // "export-token" prints a new random key for EXPORT_TOKEN (the yearly Google Drive export).
-            case "export-token" -> {
-                byte[] b = new byte[32];
-                new java.security.SecureRandom().nextBytes(b);
-                System.out.println("EXPORT_TOKEN=" + java.util.HexFormat.of().formatHex(b));
-            }
             // "copy-data [--replace]" copies the local H2 data to the database in DATABASE_URL (Neon).
             case "copy-data" -> System.exit(copyData(Arrays.copyOfRange(args, 1, args.length)));
             default -> SpringApplication.run(MoneyApplication.class, args);

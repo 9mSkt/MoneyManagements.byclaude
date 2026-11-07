@@ -20,8 +20,6 @@ services:
         sync: false
       - key: APP_TOTP_SECRET
         sync: false
-      - key: EXPORT_TOKEN
-        sync: false
       - key: GOOGLE_COPY_SHEET_ID
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_JSON

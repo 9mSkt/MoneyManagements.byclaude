@@ -17,15 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
-/** The year file with one sheet per month, and the key-protected address the Google Drive script uses. Made-up data. */
-@TestPropertySource(properties = "app.export-token=" + YearExportTest.TOKEN)
+/** The year file with one sheet per month. Made-up data. */
 @Transactional
 class YearExportTest extends AbstractWebTest {
-
-    static final String TOKEN = "sample-token-0123456789abcdef0123456789abcdef";
 
     @Autowired TransactionRepository transactions;
     @Autowired CategoryRepository categories;
@@ -91,30 +87,10 @@ class YearExportTest extends AbstractWebTest {
 
     @Test
     @WithAnonymousUser
-    void driveScriptNeedsTheKey() throws Exception {
-        sampleYear();
-        mvc.perform(get("/api/export/year.xlsx").param("year", "2025")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/export/year.xlsx").param("year", "2025").header("Authorization", "Bearer wrong"))
-                .andExpect(status().isUnauthorized());
-        byte[] xlsx = mvc.perform(get("/api/export/year.xlsx").param("year", "2025")
-                        .header("Authorization", "Bearer " + TOKEN))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Cache-Control", "no-store"))
-                .andReturn().getResponse().getContentAsByteArray();
-        try (Workbook wb = read(xlsx)) {
-            assertThat(wb.getSheet("Jan 2025")).isNotNull();
-        }
-        // Other pages still need a sign-in.
-        mvc.perform(get("/reports/export/year.xlsx").param("year", "2025").header("Authorization", "Bearer " + TOKEN))
+    void thereIsNoAddressWithoutSignIn() throws Exception {
+        // The automatic Drive export was removed: its old address now needs a sign-in like every other page.
+        mvc.perform(get("/api/export/year.xlsx").param("year", "2025").header("Authorization", "Bearer x"))
                 .andExpect(status().is3xxRedirection());
-    }
-
-    @Test
-    @WithMockUser(username = "tester")
-    void settingsShowsWhenTheScriptLastFetched() throws Exception {
-        mvc.perform(get("/api/export/year.xlsx").param("year", "2025").header("Authorization", "Bearer " + TOKEN))
-                .andExpect(status().isOk());
-        mvc.perform(get("/settings").param("lang", "en"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Last sent: the year 2025 file")));
+        mvc.perform(get("/reports/export/year.xlsx").param("year", "2025")).andExpect(status().is3xxRedirection());
     }
 }

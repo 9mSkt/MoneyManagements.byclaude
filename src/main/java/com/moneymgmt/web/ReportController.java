@@ -118,7 +118,11 @@ public class ReportController {
     /** One year of transactions in Excel: a Summary sheet and one sheet per month. */
     @GetMapping("/reports/export/year.xlsx")
     public ResponseEntity<byte[]> yearXlsx(@RequestParam int year, Locale locale) throws IOException {
-        return ExportApiController.xlsx(YearExportService.fileName(year), yearExport.yearXlsx(year, locale));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(YearExportService.fileName(year)).build().toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(yearExport.yearXlsx(year, locale));
     }
 
     /** Every table of the app in one Excel file (a backup you can keep). */
