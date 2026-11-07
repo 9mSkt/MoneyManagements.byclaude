@@ -3,6 +3,8 @@
 Personal finance web app (Thai Baht ฿) built with Java 21, Spring Boot 3, Thymeleaf + HTMX and Apache ECharts.
 The design and build plan are in [`docs/DESIGN.md`](docs/DESIGN.md).
 
+**Live:** https://money-management-9bne.onrender.com (sign-in required).
+
 ## Run locally
 
 Needs Java 21. Maven is not needed — use the wrapper (`mvnw` / `mvnw.cmd`).

@@ -2,6 +2,10 @@
 
 Approved Nov 4, 2026. Copied from the Claude Docs design doc; this file is now the source of truth for the build.
 
+**Status: all 6 phases built. Live since Nov 7, 2026 at https://money-management-9bne.onrender.com**
+(Render free plan, HTTPS, data in Neon PostgreSQL, Singapore). Sign-in required; one user.
+What changed from the approved design while building is listed in [As built](#as-built-nov-7-2026) at the end.
+
 ## Overview
 
 A Java (Spring Boot) web app that replaces the owner's "Money Management" Google Sheet: monthly income and costs, budgets, saving goals, investments and yearly Thai tax, with dashboards in Thai Baht (฿). Built in 6 phases from Wed Nov 4 to Sat Nov 7, 2026, with a review after each phase.
@@ -138,3 +142,71 @@ Six phases, two a day, each ending with a working build the owner runs and revie
 - [x] Investment prices: typed in by the user; automatic fetch can be added later.
 - [x] Language: switchable English and Thai.
 - [x] Start: Phase 1 starts tonight (Wed Nov 4), built in Claude Code from this repo.
+
+## As built (Nov 7, 2026)
+
+**Live app:** https://money-management-9bne.onrender.com — Render free web service (Docker, region Singapore, auto
+deploy on every push to `main`) and a free Neon PostgreSQL database (Singapore). The free app sleeps after 15 minutes
+without visits; the first visit after that takes about a minute. The local H2 database was copied to Neon once with
+the `copy-data` command; the online database is the real one since then.
+
+### Pages
+
+| Page | What it does |
+| --- | --- |
+| Dashboard | This month at a glance, 12-month trend, money-flow Sankey, category donut, daily spending heatmap, upcoming bills and installments |
+| Transactions | Quick add, search and filters, monthly incentive entry. Shown **by group**: one card per budget group in its colour (Income, Fixed cost, Gasoline, Necessary, Shopping, Eat / Lifestyle, Saving, Investment) with total, share and latest entries; on a phone the cards start closed. **By date** shows the full list. Entries that pushed a group over budget are red |
+| Transactions → Pay in installments | Credit card 0 % campaigns: tick a month's purchases and each becomes its own plan (default 3 months, payment 1 in that month). Plans started in the month can be ticked and cancelled together, or changed one by one |
+| Fixed costs & installments | Recurring items posted each month; installment plans with schedule. A plan can **change months** (payments in the app get the new amount) or be **cancelled** (back to one purchase at the full price) |
+| Budget | Actual budget (40/40/20) and goal budget (10/15/15/15/15/30) on income after fixed cost; edit by % or baht for one month or all later months; amber at 80 %, red over 100 % (actual budget only; saving and investing are targets) |
+| Investments | Funds and ETFs, buy/sell, average cost, FX, dividends with withholding, allocation, value over time, DCA projection; prices typed in |
+| Tax planner | Thai PIT for the year: income recorded plus estimate, deductions, bracket chart, tax due, RMF/SSF room |
+| Goals | Saving goals typed in by hand (the sheet's Saving Account block is not imported): target, saved, deadline, progress, amount per month to reach it; add or take out money, optionally also recorded as a Deposit |
+| Accounts & net worth | Wallet, bank, investment cash and credit card balances typed in from time to time (history kept). Net worth = accounts + portfolio − credit cards − installment debt, with a 12-month chart |
+| Reports | Yearly report by month and budget group with chart, month-to-month compare, downloads |
+| Settings | Theme, EN/TH, categories (EN/TH names, budget group, hide), import from the sheet, daily Google Sheet copy status, sign-in security |
+
+### Downloads (Reports → Download your data)
+
+- **Transactions by month (Excel)** for a chosen year: a Summary sheet (one row per month by budget group), then one
+  sheet per month with its entries and totals; labels follow EN/TH.
+- **Transactions (CSV)** for a year or all years (UTF-8, Thai and English category names).
+- **Full backup (Excel)**: every table on its own sheet.
+
+An automatic yearly export to Google Drive was built and then **removed at the owner's request**.
+
+### Rules agreed while building
+
+- **Payday:** salary is paid on the 28th (or the last weekday before it) and counts in the month it is received.
+  Before payday, budgets use last month's income after fixed cost as an estimate. Imported income is dated on its
+  month's payday.
+- **Installments:** the amount typed with "1/X" is the full price; an optional credit card fee per payment is added
+  on top. Each 0 % campaign purchase is its own plan.
+- **Investments:** average-cost method; cost = amount + fee; USD cost at the trade rate, value at the latest USD/THB;
+  dividends net of withholding; DCA compounds monthly at annual ÷ 12 (defaults 7,000 / month, 10 %, 20 years).
+- **Tax:** every income category is employment income 40(1) (the 8,000 housing allowance too); the yearly bonus is the
+  expected total; tax for year Y is paid on filing in Jan–Jun of Y+1; social security and PVD come from their fixed
+  costs.
+
+### Data model additions
+
+| Table | Key fields |
+| --- | --- |
+| asset_price, fx_rate | prices and USD/THB rates typed in, kept as history for charts |
+| account_balance | account, date, balance (for a credit card: amount owed) |
+| app_setting | small app state, e.g. when the daily Google Sheet copy last ran |
+
+`transaction` also links to its recurring item and keeps an optional installment fee. All changes are Flyway
+migrations V1–V8 (V6 and V7 are Java migrations that moved imported income to payday).
+
+### Security and operations
+
+- One user; username and BCrypt hash only from environment variables. 5 wrong tries lock sign-in for 15 minutes;
+  idle sign-out after 30 minutes; HTTPS by Render.
+- Optional **two-step code** (authenticator app): on when `APP_TOTP_SECRET` is set (create it with `totp-secret`).
+- Optional **daily copy to a Google Sheet** (separate from the original sheet): on when `GOOGLE_COPY_SHEET_ID` and
+  `GOOGLE_SERVICE_ACCOUNT_JSON` are set. It runs the first time the app is awake each day.
+- Backups: Neon restore history (a few hours on the free plan) and the downloads above.
+- Environment variables on Render: `SPRING_PROFILES_ACTIVE=prod`, `DATABASE_URL` (Neon's string as shown),
+  `APP_USERNAME`, `APP_PASSWORD_HASH`, and the optional ones above. Setup steps are in the README.
+- Tests: 127 automated tests with made-up data, including the whole app and the data copy on a real PostgreSQL.
