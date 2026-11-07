@@ -15,7 +15,7 @@ Personal finance web app for one user in Thailand (amounts in Thai Baht ฿). Th
 - [x] Phase 3: dashboard charts, budget planner (actual + goal, red over-budget)
 - [x] Phase 4: investment portfolio
 - [x] Phase 5: yearly Thai tax planner
-- [x] Phase 6: goals, accounts, reports, daily Google Sheet copy, tests, deploy files (the owner creates the Render + Neon accounts and runs the steps in README)
+- [x] Phase 6: goals, accounts, reports, daily Google Sheet copy, tests, deploy (live on Render + Neon since 2026-11-07; local data copied with copy-data)
 
 ## Tech rules
 
