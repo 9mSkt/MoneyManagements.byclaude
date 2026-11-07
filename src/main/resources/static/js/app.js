@@ -304,6 +304,17 @@
     updateSplit();
   }
 
+  // "Select all" tick box: data-check-all="name" ticks every box with that name in the same form.
+  document.addEventListener('change', function (e) {
+    var all = e.target;
+    if (!all.matches || !all.matches('input[data-check-all]') || !all.form) { return; }
+    var name = all.getAttribute('data-check-all');
+    all.form.querySelectorAll('input[type="checkbox"][name="' + name + '"]').forEach(function (c) {
+      c.checked = all.checked;
+    });
+    all.form.dispatchEvent(new Event('change'));
+  });
+
   // A select with data-autosubmit sends its form as soon as the choice changes (e.g. the report year).
   document.addEventListener('change', function (e) {
     var el = e.target;

@@ -130,6 +130,40 @@ class SplitInstallmentsTest extends AbstractWebTest {
     }
 
     @Test
+    void severalPlansCanBeCancelledAtOnce() throws Exception {
+        Transaction a = tx(LocalDate.of(2032, 8, 3), "SHOPPING", "6000", "Sample bag");
+        Transaction b = tx(LocalDate.of(2032, 8, 4), "SHOPPING", "3000", "Sample shoes");
+        Transaction c = tx(LocalDate.of(2032, 8, 5), "SHOPPING", "1500", "Sample hat");
+        mvc.perform(post("/transactions/installments").with(csrf()).param("month", "2032-08").param("months", "3")
+                .param("ids", a.getId().toString(), b.getId().toString(), c.getId().toString()));
+        Long pa = transactions.findWithDetailsById(a.getId()).orElseThrow().getInstallment().getId();
+        Long pb = transactions.findWithDetailsById(b.getId()).orElseThrow().getInstallment().getId();
+        Long pc = transactions.findWithDetailsById(c.getId()).orElseThrow().getInstallment().getId();
+        posting.postPlan(pa, java.time.YearMonth.of(2032, 9));
+
+        mvc.perform(get("/transactions/installments").param("month", "2032-08").param("lang", "en"))
+                .andExpect(content().string(containsString("name=\"planIds\" value=\"" + pa + "\"")))
+                .andExpect(content().string(containsString("Cancel selected")));
+
+        mvc.perform(post("/transactions/installments/cancel").with(csrf()).param("month", "2032-08")
+                        .param("planIds", pa.toString(), pb.toString()))
+                .andExpect(redirectedUrl("/transactions/installments?month=2032-08"))
+                .andExpect(flash().attribute("flash", "split.cancelled"));
+
+        assertThat(plans.findById(pa)).isEmpty();
+        assertThat(plans.findById(pb)).isEmpty();
+        assertThat(plans.findById(pc)).isPresent();   // not ticked
+        assertThat(transactions.findWithDetailsById(a.getId()).orElseThrow().getAmount()).isEqualByComparingTo("6000");
+        assertThat(transactions.findWithDetailsById(b.getId()).orElseThrow().getAmount()).isEqualByComparingTo("3000");
+        assertThat(transactions.findWithDetailsById(c.getId()).orElseThrow().getAmount()).isEqualByComparingTo("500");
+        assertThat(transactions.findByDateBetweenOrderByDateAscIdAsc(LocalDate.of(2032, 9, 1), LocalDate.of(2032, 9, 30)))
+                .noneMatch(t -> "Sample bag".equals(t.getDescription()));
+
+        mvc.perform(post("/transactions/installments/cancel").with(csrf()).param("month", "2032-08"))
+                .andExpect(flash().attribute("flashError", "split.error.noneCancel"));
+    }
+
+    @Test
     void nothingTickedShowsAnError() throws Exception {
         mvc.perform(post("/transactions/installments").with(csrf()).param("month", "2032-04"))
                 .andExpect(redirectedUrl("/transactions/installments?month=2032-04"))

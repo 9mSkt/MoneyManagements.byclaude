@@ -20,6 +20,10 @@
 
         <form th:unless="${#lists.isEmpty(rows)}" th:action="@{/transactions/installments}" method="post" data-split-form>
             <input type="hidden" name="month" th:value="${month}">
+            <label class="check small select-all">
+                <input type="checkbox" data-check-all="ids">
+                <span th:text="#{split.selectAll}">Select all</span>
+            </label>
             <ul class="list split-list">
                 <li th:each="t : ${rows}">
                     <label class="split-row">
@@ -56,16 +60,31 @@
     <div class="card" th:unless="${#lists.isEmpty(started)}">
         <div class="card-head"><h2 th:text="#{split.started}">Plans started this month</h2></div>
         <p class="muted small" th:text="#{split.startedHelp}">Open a plan to change its months or cancel it.</p>
-        <ul class="list">
-            <li th:each="p : ${started}">
-                <div class="grow">
-                    <a class="title" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})} + '#change'" th:text="${p.item}">TV</a>
-                    <div class="sub" th:text="#{split.planLine(${@fmt.baht(p.fullPrice)}, ${p.months}, ${@fmt.baht(p.monthlyAmount)})}">฿9,000 · 3 months · ฿3,000 / month</div>
-                </div>
-                <a class="btn secondary small-btn" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})} + '#change'"
-                   th:text="#{inst.change.link}">Change or cancel</a>
-            </li>
-        </ul>
+        <form th:action="@{/transactions/installments/cancel}" method="post" data-cancel-form
+              th:attr="data-confirm=#{split.cancelConfirm}">
+            <input type="hidden" name="month" th:value="${month}">
+            <label class="check small select-all">
+                <input type="checkbox" data-check-all="planIds">
+                <span th:text="#{split.selectAll}">Select all</span>
+            </label>
+            <ul class="list split-list">
+                <li th:each="p : ${started}">
+                    <label class="split-row">
+                        <input type="checkbox" name="planIds" th:value="${p.id}">
+                        <span class="grow">
+                            <span class="title" th:text="${p.item}">TV</span>
+                            <span class="sub" th:text="#{split.planLine(${@fmt.baht(p.fullPrice)}, ${p.months}, ${@fmt.baht(p.monthlyAmount)})}">฿9,000 · 3 months · ฿3,000 / month</span>
+                        </span>
+                    </label>
+                    <a class="btn secondary small-btn" th:href="@{/fixed-costs/installments/{id}/edit(id=${p.id})} + '#change'"
+                   th:text="#{split.change}">Change</a>
+                </li>
+            </ul>
+            <div class="split-foot">
+                <button type="submit" class="btn danger" th:text="#{split.cancelSelected}">Cancel selected</button>
+            </div>
+            <p class="muted small" th:text="#{split.cancelHow}">Each goes back to one purchase.</p>
+        </form>
     </div>
     <a class="link-small" th:href="@{/transactions(month=${month})}" th:text="#{split.back}">Back to transactions</a>
 </section>

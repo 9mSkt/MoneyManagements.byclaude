@@ -228,6 +228,25 @@ public class TransactionController {
         return "redirect:/transactions?month=" + ym;
     }
 
+    /** Cancel several plans at once: each goes back to one purchase at the full price. */
+    @PostMapping("/installments/cancel")
+    public String cancelPlans(@RequestParam(required = false) List<Long> planIds,
+                              @RequestParam(required = false) String month, RedirectAttributes flash) {
+        YearMonth ym = orThisMonth(month);
+        if (planIds == null || planIds.isEmpty()) {
+            flash.addFlashAttribute("flashError", "split.error.noneCancel");
+            return "redirect:/transactions/installments?month=" + ym;
+        }
+        for (Long id : planIds) {
+            if (plans.existsById(id)) {
+                service.cancelPlan(id);
+            }
+        }
+        posting.recheck();
+        flash.addFlashAttribute("flash", "split.cancelled");
+        return "redirect:/transactions/installments?month=" + ym;
+    }
+
     // ---------- Monthly incentive ----------
 
     @GetMapping("/incentive")

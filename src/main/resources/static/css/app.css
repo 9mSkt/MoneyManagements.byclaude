@@ -583,3 +583,5 @@ a.value.amount:hover { text-decoration: none; }
 .revise-form .btn { height: 44px; }
 .cancel-plan { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 .info-list li a { margin-left: 6px; font-weight: 500; }
+.split-list li .split-row { flex: 1; min-width: 0; width: auto; }
+.select-all { margin: 0 0 4px 2px; }
