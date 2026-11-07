@@ -118,8 +118,8 @@ The app must be online (Render) for this; the script cannot reach `localhost`.
    [`docs/google-drive-yearly-export.gs`](docs/google-drive-yearly-export.gs). Name the project
    "Money Management export".
 3. *Project Settings* (gear icon): set *Time zone* to `(GMT+07:00) Bangkok`, then under *Script Properties* add
-   `APP_URL` (your `https://….onrender.com` address), `EXPORT_TOKEN` (same as in Render) and `FOLDER_ID` (the part
-   of your Drive folder link after `/folders/` and before `?`). Optional: `LANG` = `th` for Thai labels.
+   `APP_URL` (your `https://….onrender.com` address), `EXPORT_TOKEN` (same as in Render) and `FOLDER_ID` (your Drive
+   folder link as you copied it, e.g. `https://drive.google.com/drive/folders/…?usp=sharing`; the ID alone works too). Optional: `LANG` = `th` for Thai labels.
 4. Back in the editor, pick `setup` and press *Run*; allow the permissions it asks for (Drive and external
    requests). Then run `testNow`: a file for this year appears in the folder.
 

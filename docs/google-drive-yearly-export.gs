@@ -9,7 +9,7 @@
  *   Project Settings -> Script Properties, add:
  *     APP_URL       https://your-app.onrender.com   (no / at the end)
  *     EXPORT_TOKEN  the same value as EXPORT_TOKEN in Render
- *     FOLDER_ID     the ID part of your Drive folder link (after /folders/)
+ *     FOLDER_ID     your Drive folder link as you copied it, or just its ID
  *     LANG          en or th (optional, default en)
  *   Then run "setup" once (it asks for permission) and "testNow" to try it.
  * Nothing secret is written in this file.
@@ -36,11 +36,21 @@ function testNow() {
   exportYear(new Date().getFullYear());
 }
 
+/**
+ * Accepts the folder link as copied from Drive (https://drive.google.com/drive/folders/<ID>?usp=sharing,
+ * also .../drive/u/0/folders/<ID> or ...?id=<ID>) or the ID on its own.
+ */
+function folderIdFrom(value) {
+  var v = (value || '').trim();
+  var m = v.match(/\/folders\/([A-Za-z0-9_-]+)/) || v.match(/[?&]id=([A-Za-z0-9_-]+)/);
+  return m ? m[1] : v;
+}
+
 function exportYear(year) {
   var p = PropertiesService.getScriptProperties();
   var appUrl = (p.getProperty('APP_URL') || '').replace(/\/+$/, '');
   var token = p.getProperty('EXPORT_TOKEN');
-  var folderId = p.getProperty('FOLDER_ID');
+  var folderId = folderIdFrom(p.getProperty('FOLDER_ID'));
   var lang = p.getProperty('LANG') || 'en';
   if (!appUrl || !token || !folderId) {
     throw new Error('Set APP_URL, EXPORT_TOKEN and FOLDER_ID in Project Settings -> Script Properties.');
